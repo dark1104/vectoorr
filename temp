@@ -1,187 +1,43 @@
-[root@cheux37oracleos7 vector_job]# vector -c vector.yaml
-2025-07-03T11:29:45.465205Z  INFO vector::app: Log level is enabled. level="info"
-2025-07-03T11:29:45.476885Z  INFO vector::app: Loading configs. paths=["vector.yaml"]
-2025-07-03T11:29:45.481673Z  WARN vrl::compiler::unused_expression_checker: unexpected identifier `now` reported as used
-2025-07-03T11:29:45.481734Z  WARN vrl::compiler::unused_expression_checker: Internal log [unexpected identifier `now` reported as used] is being suppressed to avoid flooding.
-2025-07-03T11:29:45.487739Z  WARN transform{component_kind="transform" component_id=enrich_flows component_type=remap}: vrl::compiler::unused_expression_checker: unexpected identifier `now` reported as used
-2025-07-03T11:29:45.487845Z  WARN transform{component_kind="transform" component_id=enrich_flows component_type=remap}: vrl::compiler::unused_expression_checker: Internal log [unexpected identifier `now` reported as used] is being suppressed to avoid flooding.
-2025-07-03T11:29:45.693709Z ERROR vector::topology::builder: Configuration error. error=Transform "enrich_flows":
-error[E203]: syntax error
-  ┌─ :2:5
-  │
-2 │ let mapping = parse_json!(file("/home/vncuser/vector-job/mapping.json"))
-  │     ^^^^^^^
-  │     │
-  │     unexpected syntax token: "Identifier"
-  │     expected one of: ";", "\n", "|", "=", "|=", ",", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+sources:
+  kafka_in:
+    type: kafka
+    bootstrap_servers: "192.168.91.37:9092"
+    group_id: "vector-group"
+    topics: ["flows"]
+    decoding:
+      codec: json
 
-error[E203]: syntax error
-  ┌─ :4:5
-  │
-4 │ let known = {}
-  │     ^^^^^
-  │     │
-  │     unexpected syntax token: "Identifier"
-  │     expected one of: ";", "\n", "|", "=", "|=", ",", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+transforms:
+  enrich_flows:
+    type: remap
+    inputs: [kafka_in]
+    source: |
+      # Parse the mapping file
+      .mapping = parse_json!(file("/home/vncuser/vector-job/mapping.json"))
 
-error[E203]: syntax error
-  ┌─ :5:5
-  │
-5 │ let extra = {}
-  │     ^^^^^
-  │     │
-  │     unexpected syntax token: "Identifier"
-  │     expected one of: ";", "\n", "|", "=", "|=", ",", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+      # Init output and extra
+      .output = {}
+      .extra = {}
 
-error[E203]: syntax error
-  ┌─ :7:11
-  │
-7 │ for_each(.keys()) -> |key| {
-  │           ^^^^
-  │           │
-  │           unexpected syntax token: "FunctionCall"
-  │           expected one of: "identifier", "path field", "string literal", RQuery, "abort", "return", ".", "["
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+      for key in keys(.) {
+        if exists(.mapping[key]) {
+          meta = .mapping[key]
+          .output[meta.name] = get!(., key, meta.default)
+        } else {
+          .extra[key] = .[key]
+        }
+      }
 
-error[E203]: syntax error
-  ┌─ :9:9
-  │
-9 │     let meta = mapping[key]
-  │         ^^^^
-  │         │
-  │         unexpected syntax token: "Identifier"
-  │         expected one of: ";", "\n", "|", "=", "|=", ",", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??", "}"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+      .output.date = format_timestamp(now(), "%Y-%m-%d")
+      .output.time_inserted_ns = to_unix_timestamp(now(), "nanoseconds")
+      .output.extra_fields = .extra
+      . = .output
 
-error[E203]: syntax error
-   ┌─ :10:11
-   │
-10 │     known[meta.name] = .[key] ?? meta.default
-   │           ^
-   │           │
-   │           unexpected syntax token: "LQuery"
-   │           expected one of: "integer literal"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :11:3
-   │
-11 │   } else {
-   │   ^
-   │   │
-   │   unexpected syntax token: "RBrace"
-   │   expected one of: "identifier", "string literal", "raw string literal", "integer literal", "float literal", "regex literal", "timestamp literal", "function call", "path literal", "if", "null", "true", "false", "abort", "return", "_", "!", "[", "{", "("
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :12:11
-   │
-12 │     extra[key] = .[key]
-   │           ^^^
-   │           │
-   │           unexpected syntax token: "Identifier"
-   │           expected one of: "integer literal"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :13:3
-   │
-13 │   }
-   │   ^
-   │   │
-   │   unexpected syntax token: "RBrace"
-   │   expected one of: "identifier", "string literal", "raw string literal", "integer literal", "float literal", "regex literal", "timestamp literal", "function call", "path literal", "if", "null", "true", "false", "abort", "return", "_", "!", "[", "{", "("
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :14:1
-   │
-14 │ }
-   │ ^
-   │ │
-   │ unexpected syntax token: "RBrace"
-   │ expected one of: "identifier", "string literal", "raw string literal", "integer literal", "float literal", "regex literal", "timestamp literal", "function call", "path literal", "if", "null", "true", "false", "abort", "return", "_", "!", "[", "{", "("
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :16:5
-   │
-16 │ let now = now()
-   │     ^^^
-   │     │
-   │     unexpected syntax token: "Identifier"
-   │     expected one of: ";", "\n", "|", "=", "|=", ",", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E701]: call to undefined variable
-   ┌─ :17:32
-   │
-17 │ known.date = format_timestamp!(now, "%Y-%m-%d")
-   │                                ^^^
-   │                                │
-   │                                undefined variable
-   │                                did you mean "null"?
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E701]: call to undefined variable
-   ┌─ :18:44
-   │
-18 │ known.time_inserted_ns = to_unix_timestamp(now, "nanoseconds")
-   │                                            ^^^
-   │                                            │
-   │                                            undefined variable
-   │                                            did you mean "null"?
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E701]: call to undefined variable
-   ┌─ :19:22
-   │
-19 │ known.extra_fields = extra
-   │                      ^^^^^
-   │                      │
-   │                      undefined variable
-   │                      did you mean "true"?
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E701]: call to undefined variable
-   ┌─ :20:5
-   │
-20 │ . = known
-   │     ^^^^^
-   │     │
-   │     undefined variable
-   │     did you mean "null"?
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+sinks:
+  kafka_out:
+    type: kafka
+    inputs: [enrich_flows]
+    bootstrap_servers: "192.168.91.37:9092"
+    topic: "enriched-flows"
+    encoding:
+      codec: json
