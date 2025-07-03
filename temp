@@ -1,2 +1,68 @@
 {"flow_start_time": "Sun Mar 30 08:06:10 UTC 2025", "date": "2025-05-09", "destination TransportPort":0,"bytes_accumulated":7389, "latitude ":0,"sourceIPv4Address": "173.130.155.90", "mac_source": "3a:dl:ea:14:39:54", "mac_destination": "40:8c:d1:8e:af:21", "api_data": {"gender": "Male", "last_name":"Karle", "id":495, "ip_address": "173.130.155.90", "first_name": "Pepe", "email":"pkarledq@is.gd"},"flow_duration_ms":35 5, "flow_end_time":"Sun Mar 30 08:12:05 UTC 2025", "asn_organization": "NA", "tcp_retransmits":0,"profile_name": "web_servers", "time_inser ted_ns":1746789289969000000, "city_name": "NA", "application_name": "unknown", "protocolName":"ICMP", "country_name": "NA", "octet DeltaCount" :7389, "bytes_per_packet":1055.5714285714287, "sourceTransportPort": 0, "flowEnd Milliseconds": 1743321970355, "longitude": 0, "destination IPv 714285714287,"sourceTransport 4Address": "45.124.253.173", "tcp_rst":0,"packetDeltaCount":7, "http_url": null, "protocolIdentifier": 1, "tcp_fin":0,"flow_direction": "outb ound", "asn_number": 0, "time_received_ns":1743322325000000000,"iso code":"NA", "datalink van": 1, "https certificatul FlowStar tMilliseconds": 1743321970000}
  
+data_dir: /var/lib/vector
+
+sources:
+  flow_input:
+    type: stdin
+    # For Kafka, replace with:
+    # type: kafka
+    # bootstrap_servers: "localhost:9092"
+    # topics: ["raw_flows"]
+    # decoding.codec: json
+
+transforms:
+  enrich_flows:
+    type: remap
+    inputs:
+      - flow_input
+    source: |
+      .enriched = {}
+      .extra = {}
+
+      _map = {
+        "sourceIPv4Address": { target: "source_ip", default: "NA" },
+        "destinationIPv4Address": { target: "dest_ip", default: "NA" },
+        "protocolIdentifier": { target: "protocol_id", default: 0 },
+        "protocolName": { target: "protocol_name", default: "NA" },
+        "sourceTransportPort": { target: "src_port", default: 0 },
+        "destinationTransportPort": { target: "dst_port", default: 0 },
+        "application_name": { target: "app", default: "unknown" },
+        "city_name": { target: "city", default: "NA" },
+        "country_name": { target: "country", default: "NA" },
+        "asn_number": { target: "asn", default: 0 },
+        "asn_organization": { target: "asn_org", default: "NA" },
+        "latitude": { target: "lat", default: 0 },
+        "longitude": { target: "lon", default: 0 },
+        "flow_duration_ms": { target: "duration", default: 0 },
+        "flow_direction": { target: "direction", default: "unknown" },
+        "bytes_accumulated": { target: "bytes", default: 0 },
+        "packetDeltaCount": { target: "packets", default: 0 },
+        "profile_name": { target: "profile", default: "NA" },
+        "datalink_vlan": { target: "vlan", default: 0 }
+      }
+
+      each(k, v) = . => {
+        if exists(_map[k]) {
+          entry = _map[k]
+          .enriched[entry.target] = v ?? entry.default
+        } else {
+          .extra[k] = v
+        }
+      }
+
+      .enriched.flow_timestamp = now()
+      .enriched.time_inserted_ns = to_unix_timestamp!(.enriched.flow_timestamp, "nanoseconds")
+      .enriched.extra_fields = .extra
+
+      . = .enriched
+
+sinks:
+  kafka_out:
+    type: kafka
+    inputs:
+      - enrich_flows
+    bootstrap_servers: "localhost:9092"
+    topic: "enriched_flows"
+    encoding:
+      codec: json
