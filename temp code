@@ -1,39 +1,63 @@
-date Date DEFAULT toDate(flow_start_time),
-        time_inserted_ns DateTime,
-        time_received_ns DateTime,
-        user_name String DEFAULT 'NA',
-        email String DEFAULT 'NA',
-        device_type String DEFAULT 'NA',
-        sourceIPv4Address String DEFAULT 'NA',
-        destinationIPv4Address String DEFAULT 'NA',
-        protocolIdentifier UInt32 DEFAULT 0,
-        protocolName String DEFAULT 'NA',
-        sourceTransportPort UInt32 DEFAULT 0,
-        destinationTransportPort UInt32 DEFAULT 0,
-        octetDeltaCount UInt64 DEFAULT 0,
-        packetDeltaCount UInt64 DEFAULT 0,
-        flowStartMilliseconds UInt64 DEFAULT 0,
-        flowEndMilliseconds UInt64 DEFAULT 0,
-        mac_source String DEFAULT 'NA',
-        mac_destination String DEFAULT 'NA',
-        application_name String DEFAULT 'NA',
-        http_url String DEFAULT 'NA',
-        https_url_certificate String DEFAULT 'NA',
-        datalink_vlan UInt32 DEFAULT 0,
-        bytes_accumulated UInt64 DEFAULT 0,
-        tcp_retransmits UInt32 DEFAULT 0,
-        tcp_rst UInt32 DEFAULT 0,
-        tcp_fin UInt32 DEFAULT 0,
-        bytes_per_packet Float64 DEFAULT 0.0,
-        flow_duration_ms UInt64 DEFAULT 0,
-        flow_direction String DEFAULT  'NA',
-        profile_name String DEFAULT 'NA',
-        asn_number UInt32 DEFAULT 0,
-        asn_organization String DEFAULT 'NA' ,
-        city_name String DEFAULT 'NA',
-        country_name String DEFAULT 'NA',
-        latitude Float64 DEFAULT 0.0,
-        longitude Float64 DEFAULT 0.0,
-        iso_code String DEFAULT 'NA',
-        flow_start_time DateTime64(3) DEFAULT now64(3),
-        flow_end_time DateTime64(3) DEFAULT now64(3)
+sources:
+  kafka_in:
+    type: kafka
+    bootstrap_servers: "localhost:9092"
+    topics: ["raw_flows"]
+    group_id: "vector-consumer"
+    decoding:
+      codec: json
+
+transforms:
+  enrich_flows:
+    type: remap
+    inputs: [kafka_in]
+    source: |
+      # Fix badly named/malformed keys
+      .destinationTransportPort = to_int(get!(., "destination TransportPort"))
+      del(.["destination TransportPort"])
+
+      .latitude = to_float(get!(., "latitude "))
+      del(.["latitude "])
+
+      .destinationIPv4Address = get!(., "destination IPv 714285714287") ?? "NA"
+      del(.["destination IPv 714285714287"])
+
+      .flow_duration_ms = to_int(get!(., "flow_duration_ms") ?? 0)
+      del(.["flow_duration_ms"])
+
+      .flow_end_time = parse_timestamp!(get!(., "flow_end_time"), "%a %b %d %H:%M:%S %Z %Y")
+      del(.["flow_end_time"])
+
+      .octetDeltaCount = to_int(get!(., "octet DeltaCount") ?? 0)
+      del(.["octet DeltaCount"])
+
+      .iso_code = get!(., "iso code") ?? "NA"
+      del(.["iso code"])
+
+      .time_inserted_ns = to_int(get!(., "time_inser ted_ns") ?? now())
+      del(.["time_inser ted_ns"])
+
+      .datalink_vlan = to_int(get!(., "datalink van") ?? 0)
+      del(.["datalink van"])
+
+      .https_url_certificate = get!(., "https certificatul FlowStartMilliseconds") ?? "NA"
+      del(.["https certificatul FlowStartMilliseconds"])
+
+      # Example: flatten nested `api_data`
+      if exists(.api_data) {
+        .user_name = get!(.api_data, "first_name") ?? "NA"
+        .email = get!(.api_data, "email") ?? "NA"
+        del(.api_data)
+      }
+
+      # Optional timestamp conversion
+      .flow_start_time = parse_timestamp!(get!(., "flow_start_time"), "%a %b %d %H:%M:%S %Z %Y")
+
+sinks:
+  kafka_out:
+    type: kafka
+    inputs: [enrich_flows]
+    bootstrap_servers: "localhost:9092"
+    topic: "clean_flows"
+    encoding:
+      codec: json
