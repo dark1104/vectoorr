@@ -1,41 +1,123 @@
-sources:
-  kafka_in:
-    type: kafka
-    bootstrap_servers: "localhost:9092"
-    topics: ["raw_flows"]
-    group_id: "vector-consumer"
-    # No encoding field here in 0.48+
-    # JSON is default codec for Kafka in recent versions
+[root@cheux37oracleos7 vector_job]# vector -c vector.yaml
+2025-07-03T12:19:26.990550Z  INFO vector::app: Log level is enabled. level="info"
+2025-07-03T12:19:27.006232Z  INFO vector::app: Loading configs. paths=["vector.yaml"]
+2025-07-03T12:19:27.221564Z ERROR vector::topology::builder: Configuration error. error=Transform "enrich_flows":
+error[E203]: syntax error
+  ┌─ :2:35
+  │
+2 │ .destinationTransportPort = del(.["destination TransportPort"])
+  │                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  │                                   │
+  │                                   unexpected syntax token: "StringLiteral"
+  │                                   expected one of: "integer literal"
+  │
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-transforms:
-  enrich_flows:
-    type: remap
-    inputs: ["kafka_in"]
-    source: |
-      # Clean and normalize field names
-      .destinationTransportPort = del(.["destination TransportPort"])
-      .latitude = del(.["latitude "])
-      .destinationIPv4Address = del(.["destination IPv 714285714287"])
-      .flow_duration_ms = to_int!(.["flow_duration_ms"])
-      .flow_end_time = del(.["flow_end_time"])
-      .octetDeltaCount = del(.["octet DeltaCount"])
-      .iso_code = del(.["iso code"])
-      .time_inserted_ns = del(.["time_inser ted_ns"])
-      .datalink_vlan = del(.["datalink van"])
-      .http_cert_start_ms = del(.["https certificatul FlowStartMilliseconds"])
+error[E203]: syntax error
+  ┌─ :3:19
+  │
+3 │ .latitude = del(.["latitude "])
+  │                   ^^^^^^^^^^^
+  │                   │
+  │                   unexpected syntax token: "StringLiteral"
+  │                   expected one of: "integer literal"
+  │
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-      # Remove nulls or empty strings
-      . = compact(.)
-      
-      # Enrich with timestamp info
-      .date = format_timestamp!(now(), "%Y-%m-%d")
-      .time_inserted_ns = to_unix_timestamp(now(), "nanoseconds")
+error[E203]: syntax error
+  ┌─ :4:33
+  │
+4 │ .destinationIPv4Address = del(.["destination IPv 714285714287"])
+  │                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  │                                 │
+  │                                 unexpected syntax token: "StringLiteral"
+  │                                 expected one of: "integer literal"
+  │
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-sinks:
-  kafka_out:
-    type: kafka
-    inputs: ["enrich_flows"]
-    bootstrap_servers: "localhost:9092"
-    topic: "enriched_flows"
-    encoding:
-      codec: json
+error[E203]: syntax error
+  ┌─ :5:31
+  │
+5 │ .flow_duration_ms = to_int!(.["flow_duration_ms"])
+  │                               ^^^^^^^^^^^^^^^^^^
+  │                               │
+  │                               unexpected syntax token: "StringLiteral"
+  │                               expected one of: "integer literal"
+  │
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+
+error[E203]: syntax error
+  ┌─ :6:24
+  │
+6 │ .flow_end_time = del(.["flow_end_time"])
+  │                        ^^^^^^^^^^^^^^^
+  │                        │
+  │                        unexpected syntax token: "StringLiteral"
+  │                        expected one of: "integer literal"
+  │
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+
+error[E203]: syntax error
+  ┌─ :7:26
+  │
+7 │ .octetDeltaCount = del(.["octet DeltaCount"])
+  │                          ^^^^^^^^^^^^^^^^^^
+  │                          │
+  │                          unexpected syntax token: "StringLiteral"
+  │                          expected one of: "integer literal"
+  │
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+
+error[E203]: syntax error
+  ┌─ :8:19
+  │
+8 │ .iso_code = del(.["iso code"])
+  │                   ^^^^^^^^^^
+  │                   │
+  │                   unexpected syntax token: "StringLiteral"
+  │                   expected one of: "integer literal"
+  │
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+
+error[E203]: syntax error
+  ┌─ :9:27
+  │
+9 │ .time_inserted_ns = del(.["time_inser ted_ns"])
+  │                           ^^^^^^^^^^^^^^^^^^^
+  │                           │
+  │                           unexpected syntax token: "StringLiteral"
+  │                           expected one of: "integer literal"
+  │
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+
+error[E203]: syntax error
+   ┌─ :10:24
+   │
+10 │ .datalink_vlan = del(.["datalink van"])
+   │                        ^^^^^^^^^^^^^^
+   │                        │
+   │                        unexpected syntax token: "StringLiteral"
+   │                        expected one of: "integer literal"
+   │
+   = see language documentation at https://vrl.dev
+   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+
+error[E203]: syntax error
+   ┌─ :11:29
+   │
+11 │ .http_cert_start_ms = del(.["https certificatul FlowStartMilliseconds"])
+   │                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   │                             │
+   │                             unexpected syntax token: "StringLiteral"
+   │                             expected one of: "integer literal"
+   │
+   = see language documentation at https://vrl.dev
+   = try your code in the VRL REPL, learn more at https://vrl.dev/example
