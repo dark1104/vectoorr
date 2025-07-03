@@ -63,3 +63,80 @@ sinks:
     bootstrap_servers: "localhost:9092"
     topic: "enriched_flows"
     encoding.codec: json
+
+
+
+
+
+------
+
+
+sources:
+  kafka_in:
+    type: kafka
+    bootstrap_servers: "localhost:9092"
+    topics: ["raw_flows"]
+    group_id: "vector-consumer"
+    decoding:
+      codec: json
+
+transforms:
+  enrich_flows:
+    type: remap
+    inputs: ["kafka_in"]
+    source: |
+      # Rename or fix known fields
+      . = merge(., {
+        "destinationTransportPort": del(.["destination TransportPort"]),
+        "flow_duration_ms": del(.["flow_duration_ms"]),
+        "flow_end_time": del(.["flow_end_time"]),
+        "flow_start_time": del(.["flow_start_time"]),
+        "octetDeltaCount": del(.["octet DeltaCount"]),
+        "sourceTransportPort": del(.["sourceTransportPort"]),
+        "sourceIPv4Address": del(.["sourceIPv4Address"]),
+        "destinationIPv4Address": del(.["destination IPv 714285714287"]),
+        "longitude": del(.["longitude"]),
+        "latitude": del(.["latitude "]),
+        "iso_code": del(.["iso code"]),
+        "flow_direction": del(.["flow_direction"]),
+        "datalink_vlan": del(.["datalink van"]),
+        "http_cert_start_ms": del(.["https certificatul FlowStartMilliseconds"]),
+        "time_inserted_ns": del(.["time_inser ted_ns"]),
+        "application_name": del(.["application_name"]),
+        "protocolName": del(.["protocolName"]),
+        "tcp_retransmits": del(.["tcp_retransmits"]),
+        "tcp_rst": del(.["tcp_rst"]),
+        "tcp_fin": del(.["tcp_fin"]),
+        "asn_number": del(.["asn_number"]),
+        "asn_organization": del(.["asn_organization"]),
+        "city_name": del(.["city_name"]),
+        "country_name": del(.["country_name"]),
+        "packetDeltaCount": del(.["packetDeltaCount"]),
+        "bytes_per_packet": del(.["bytes_per_packet"]),
+        "bytes_accumulated": del(.["bytes_accumulated"]),
+        "profile_name": del(.["profile_name"]),
+        "protocolIdentifier": del(.["protocolIdentifier"]),
+        "flowEndMilliseconds": del(.["flowEnd Milliseconds"]),
+        "mac_source": del(.["mac_source"]),
+        "mac_destination": del(.["mac_destination"]),
+        "http_url": del(.["http_url"]),
+        "time_received_ns": del(.["time_received_ns"])
+      })
+
+      # Trim and normalize string keys if needed
+      . = compact(.)  # remove nulls
+
+      # Optional: Add timestamp if missing
+      if !exists(.timestamp) {
+        .timestamp = now()
+      }
+
+sinks:
+  kafka_out:
+    type: kafka
+    inputs:
+      - enrich_flows
+    bootstrap_servers: "localhost:9092"
+    topic: "enriched_flows"
+    encoding:
+      codec: json
