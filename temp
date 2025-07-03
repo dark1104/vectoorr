@@ -17,3 +17,77 @@ error[E203]: syntax error
    = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
 [root@cheux37oracleos7 vector_job]#
+
+
+
+
+
+data_dir: /var/lib/vector
+
+sources:
+  flow_input:
+    type: stdin
+    # For Kafka:
+    # type: kafka
+    # bootstrap_servers: "localhost:9092"
+    # topics: ["raw_flows"]
+    # decoding.codec: json
+
+transforms:
+  enrich_flows:
+    type: remap
+    inputs:
+      - flow_input
+    source: |
+      let _map = {
+        "sourceIPv4Address": { target: "source_ip", default: "NA" },
+        "destinationIPv4Address": { target: "dest_ip", default: "NA" },
+        "protocolIdentifier": { target: "protocol_id", default: 0 },
+        "protocolName": { target: "protocol_name", default: "NA" },
+        "sourceTransportPort": { target: "src_port", default: 0 },
+        "destinationTransportPort": { target: "dst_port", default: 0 },
+        "application_name": { target: "app", default: "unknown" },
+        "city_name": { target: "city", default: "NA" },
+        "country_name": { target: "country", default: "NA" },
+        "asn_number": { target: "asn", default: 0 },
+        "asn_organization": { target: "asn_org", default: "NA" },
+        "latitude": { target: "lat", default: 0 },
+        "longitude": { target: "lon", default: 0 },
+        "flow_duration_ms": { target: "duration", default: 0 },
+        "flow_direction": { target: "direction", default: "unknown" },
+        "bytes_accumulated": { target: "bytes", default: 0 },
+        "packetDeltaCount": { target: "packets", default: 0 },
+        "profile_name": { target: "profile", default: "NA" },
+        "datalink_vlan": { target: "vlan", default: 0 }
+      }
+
+      let enriched = {}
+      let extra = {}
+
+      # Loop over all fields in the event
+      for key in keys(.) {
+        if exists(_map, key) {
+          let entry = _map[key]
+          enriched[entry.target] = get!(., key) ?? entry.default
+        } else {
+          extra[key] = get!(., key)
+        }
+      }
+
+      # Add metadata
+      enriched.flow_timestamp = now()
+      enriched.time_inserted_ns = to_unix_timestamp!(enriched.flow_timestamp, "nanoseconds")
+      enriched.extra_fields = extra
+
+      # Final assignment
+      . = enriched
+
+sinks:
+  kafka_out:
+    type: kafka
+    inputs:
+      - enrich_flows
+    bootstrap_servers: "localhost:9092"
+    topic: "enriched_flows"
+    encoding:
+      codec: json
