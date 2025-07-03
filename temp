@@ -1,0 +1,3 @@
+Need to define a mapping file b/w flow records coming from db and what is the corresponding coloumn in db . The mapping should have a name ,description , datatype , ismandatory and default value. If you recieve something that is not matching , we just need to stored that in a general coloumn in table  which should be in jsonb datatype.  This translation should happen in flink. Lets say you get 15 values from collector (goflow2) and we only have DB mapping for 10 values , the output kafka should have proper mapping for 10 values and remaning 5 values should be stored in json format in the coloumn to hold additional values.  this is a generic coloumn of jsonb type
+
+need to do this without using flink and use https://vector.dev/
