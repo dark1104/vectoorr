@@ -1,63 +1,43 @@
-cd /tmp
-curl -L -o vector.rpm https://github.com/timberio/vector/releases/download/v0.48.0/vector-0.48.0-1.x86_64.rpm
-sudo rpm -Uvh vector.rpm
+sources:
+  kafka_in:
+    type: kafka
+    bootstrap_servers: "192.168.91.37:9092"
+    group_id: "vector-group"
+    topics: ["flows"]
+    decoding:
+      codec: json
 
+transforms:
+  enrich_flows:
+    type: remap
+    inputs: [kafka_in]
+    source: |
+      # Load the JSON mapping file
+      let mapping = parse_json!(file("/home/vncuser/vector-job/mapping.json"))
 
-{
-  "sourceIPv4Address": {
-    "name": "source_ip",
-    "description": "Source IPv4 Address",
-    "type": "string",
-    "isMandatory": true,
-    "default": "0.0.0.0"
-  },
-  "destinationIPv4Address": {
-    "name": "destination_ip",
-    "description": "Destination IPv4 Address",
-    "type": "string",
-    "isMandatory": true,
-    "default": "0.0.0.0"
-  },
-  "protocolidentifier": {
-    "name": "protocol_id",
-    "description": "Protocol Identifier",
-    "type": "int",
-    "isMandatory": false,
-    "default": 0
-  },
-  "protocolname": {
-    "name": "protocol_name",
-    "description": "Protocol Name",
-    "type": "string",
-    "isMandatory": false,
-    "default": "NA"
-  },
-  "sourcetransportport": {
-    "name": "source_port",
-    "description": "Source Transport Port",
-    "type": "int",
-    "isMandatory": false,
-    "default": 0
-  },
-  "destinationtransportport": {
-    "name": "destination_port",
-    "description": "Destination Transport Port",
-    "type": "int",
-    "isMandatory": false,
-    "default": 0
-  },
-  "flow_start_time": {
-    "name": "flow_start_time",
-    "description": "Start Time of Flow",
-    "type": "string",
-    "isMandatory": false,
-    "default": "1970-01-01T00:00:00.000"
-  },
-  "flow_end_time": {
-    "name": "flow_end_time",
-    "description": "End Time of Flow",
-    "type": "string",
-    "isMandatory": false,
-    "default": "1970-01-01T00:00:00.000"
-  }
-}
+      let known = {}
+      let extra = {}
+
+      for_each(.keys()) -> |key| {
+        if contains(mapping, key) {
+          let meta = mapping[key]
+          known[meta.name] = .[key] ?? meta.default
+        } else {
+          extra[key] = .[key]
+        }
+      }
+
+      let now = now()
+      known.date = format_timestamp!(now, "%Y-%m-%d")
+      known.time_inserted_ns = to_unix_timestamp(now, "nanoseconds")
+      known.extra_fields = extra
+      . = known
+
+sinks:
+  kafka_out:
+    type: kafka
+    inputs: [enrich_flows]
+    bootstrap_servers: "192.168.91.37:9092"
+    topic: "enriched-flows"
+    encoding:
+      codec: json
