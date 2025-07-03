@@ -12,16 +12,16 @@ transforms:
     type: remap
     inputs: [kafka_in]
     source: |
-      ._mapping = parse_json!(file("/home/vncuser/vector_job/mapping.json"))
+      ._mapping = parse_json!(read_file!("/home/root/new_dir/goflow2/compose/kcg/vector_job/mapping.json"))
       .known = {}
       .extra = {}
 
-      for key in keys!(.) {
+      for_each(key, value in .) {
         if exists(._mapping, key) {
           meta = get!(._mapping, key)
-          .known[meta.name] = get!(., key, meta.default)
+          .known[meta.name] = value ?? meta.default
         } else {
-          .extra[key] = .[key]
+          .extra[key] = value
         }
       }
 
