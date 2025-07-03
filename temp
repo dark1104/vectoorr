@@ -12,33 +12,34 @@ transforms:
     type: remap
     inputs: [kafka_in]
     source: |
-      .known = {}
-      .extra = {}
-
-      _mapping = {
-        "sourceIPv4Address": {"name": "source_ip", "default": "0.0.0.0"},
-        "destinationIPv4Address": {"name": "destination_ip", "default": "0.0.0.0"},
-        "protocolIdentifier": {"name": "protocol_id", "default": 0},
-        "protocolName": {"name": "protocol_name", "default": "NA"},
-        "sourceTransportPort": {"name": "source_port", "default": 0},
-        "destinationTransportPort": {"name": "destination_port", "default": 0},
-        "packetDeltaCount": {"name": "packets", "default": 0},
-        "octetDeltaCount": {"name": "bytes", "default": 0}
+      # Define field mappings inline
+      _map = {
+        "sourceIPv4Address": {"target": "source_ip", "default": "0.0.0.0"},
+        "destinationIPv4Address": {"target": "destination_ip", "default": "0.0.0.0"},
+        "protocolIdentifier": {"target": "protocol_id", "default": 0},
+        "protocolName": {"target": "protocol_name", "default": "NA"},
+        "sourceTransportPort": {"target": "source_port", "default": 0},
+        "destinationTransportPort": {"target": "destination_port", "default": 0},
+        "packetDeltaCount": {"target": "packets", "default": 0},
+        "octetDeltaCount": {"target": "bytes", "default": 0}
       }
 
+      # Create new enriched record
+      enriched = {}
+
       for key in keys!(.) {
-        if exists(_mapping, key) {
-          meta = _mapping[key]
-          .known[meta.name] = get!(., key) ?? meta.default
-        } else {
-          .extra[key] = get!(., key)
+        if exists(_map, key) {
+          entry = _map[key]
+          enriched[entry.target] = get!(., key) ?? entry.default
         }
       }
 
-      .known.date = format_timestamp!(now(), "%Y-%m-%d")
-      .known.time_inserted_ns = to_unix_timestamp!(now(), "nanoseconds")
-      .known.extra_fields = .extra
-      . = .known
+      # Add timestamps
+      enriched["date"] = format_timestamp!(now(), "%Y-%m-%d")
+      enriched["time_inserted_ns"] = to_unix_timestamp!(now(), "nanoseconds")
+
+      # Replace entire event with enriched record
+      . = enriched
 
 sinks:
   kafka_out:
