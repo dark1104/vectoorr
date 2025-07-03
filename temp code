@@ -4,15 +4,15 @@ sources:
     bootstrap_servers: "localhost:9092"
     topics: ["raw_flows"]
     group_id: "vector-consumer"
-    encoding:
-      codec: json
+    # No encoding field here in 0.48+
+    # JSON is default codec for Kafka in recent versions
 
 transforms:
   enrich_flows:
     type: remap
     inputs: ["kafka_in"]
     source: |
-      # Normalize misnamed fields
+      # Clean and normalize field names
       .destinationTransportPort = del(.["destination TransportPort"])
       .latitude = del(.["latitude "])
       .destinationIPv4Address = del(.["destination IPv 714285714287"])
@@ -24,10 +24,10 @@ transforms:
       .datalink_vlan = del(.["datalink van"])
       .http_cert_start_ms = del(.["https certificatul FlowStartMilliseconds"])
 
-      # Clean up other invalid or null fields
-      . = compact(.) # remove nulls
-
-      # Optional: add date/time fields
+      # Remove nulls or empty strings
+      . = compact(.)
+      
+      # Enrich with timestamp info
       .date = format_timestamp!(now(), "%Y-%m-%d")
       .time_inserted_ns = to_unix_timestamp(now(), "nanoseconds")
 
