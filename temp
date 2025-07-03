@@ -1,129 +1,40 @@
-[root@cheux37oracleos7 vector_job]# vector -c vector.yaml
-2025-07-03T11:34:35.484196Z  INFO vector::app: Log level is enabled. level="info"
-2025-07-03T11:34:35.491916Z  INFO vector::app: Loading configs. paths=["vector.yaml"]
-2025-07-03T11:34:35.710649Z ERROR vector::topology::builder: Configuration error. error=Transform "enrich_flows":
-error[E105]: call to undefined function
-  ┌─ :2:24
-  │
-2 │ .mapping = parse_json!(file("/home/vncuser/vector-job/mapping.json"))
-  │                        ^^^^
-  │                        │
-  │                        undefined function
-  │                        did you mean "filter"?
-  │
-  = learn more about error code 105 at https://errors.vrl.dev/105
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+sources:
+  kafka_in:
+    type: kafka
+    bootstrap_servers: "192.168.91.37:9092"
+    group_id: "vector-group"
+    topics: ["flows"]
+    decoding:
+      codec: json
 
-error[E205]: reserved keyword
-  ┌─ :8:1
-  │
-8 │ for key in keys(.) {
-  │ ^^^
-  │ │
-  │ this identifier name is reserved for future use in the language
-  │ use a different name instead
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+transforms:
+  enrich_flows:
+    type: remap
+    inputs: [kafka_in]
+    source: |
+      ._mapping = parse_json!(file("/home/vncuser/vector_job/mapping.json"))
+      .known = {}
+      .extra = {}
 
-error[E203]: syntax error
-  ┌─ :9:22
-  │
-9 │   if exists(.mapping[key]) {
-  │                      ^^^
-  │                      │
-  │                      unexpected syntax token: "Identifier"
-  │                      expected one of: "integer literal"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+      for key in keys!(.) {
+        if exists(._mapping, key) {
+          meta = get!(._mapping, key)
+          .known[meta.name] = get!(., key, meta.default)
+        } else {
+          .extra[key] = .[key]
+        }
+      }
 
-error[E203]: syntax error
-   ┌─ :10:21
-   │
-10 │     meta = .mapping[key]
-   │                     ^^^
-   │                     │
-   │                     unexpected syntax token: "Identifier"
-   │                     expected one of: "integer literal"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+      .known.date = format_timestamp!(now(), "%Y-%m-%d")
+      .known.time_inserted_ns = to_unix_timestamp!(now(), "nanoseconds")
+      .known.extra_fields = .extra
+      . = .known
 
-error[E203]: syntax error
-   ┌─ :11:13
-   │
-11 │     .output[meta.name] = get!(., key, meta.default)
-   │             ^
-   │             │
-   │             unexpected syntax token: "LQuery"
-   │             expected one of: "integer literal"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :12:3
-   │
-12 │   } else {
-   │   ^
-   │   │
-   │   unexpected syntax token: "RBrace"
-   │   expected one of: "identifier", "string literal", "raw string literal", "integer literal", "float literal", "regex literal", "timestamp literal", "function call", "path literal", "if", "null", "true", "false", "abort", "return", "_", "!", "[", "{", "("
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :13:12
-   │
-13 │     .extra[key] = .[key]
-   │            ^^^
-   │            │
-   │            unexpected syntax token: "Identifier"
-   │            expected one of: "integer literal"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :14:3
-   │
-14 │   }
-   │   ^
-   │   │
-   │   unexpected syntax token: "RBrace"
-   │   expected one of: "identifier", "string literal", "raw string literal", "integer literal", "float literal", "regex literal", "timestamp literal", "function call", "path literal", "if", "null", "true", "false", "abort", "return", "_", "!", "[", "{", "("
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :15:1
-   │
-15 │ }
-   │ ^
-   │ │
-   │ unexpected syntax token: "RBrace"
-   │ expected one of: "identifier", "string literal", "raw string literal", "integer literal", "float literal", "regex literal", "timestamp literal", "function call", "path literal", "if", "null", "true", "false", "abort", "return", "_", "!", "[", "{", "("
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E103]: unhandled fallible assignment
-   ┌─ :17:16
-   │
-17 │ .output.date = format_timestamp(now(), "%Y-%m-%d")
-   │ -------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this expression is fallible because at least one argument's type cannot be verified to be valid
-   │ │
-   │ or change this to an infallible assignment:
-   │ .output.date, err = format_timestamp(now(), "%Y-%m-%d")
-   │
-   = see documentation about error handling at https://errors.vrl.dev/#handling
-   = see functions characteristics documentation at https://vrl.dev/expressions/#function-call-characteristics
-   = learn more about error code 103 at https://errors.vrl.dev/103
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-[root@cheux37oracleos7 vector_job]#
+sinks:
+  kafka_out:
+    type: kafka
+    inputs: [enrich_flows]
+    bootstrap_servers: "192.168.91.37:9092"
+    topic: "enriched-flows"
+    encoding:
+      codec: json
