@@ -1,40 +1,89 @@
-sources:
-  kafka_in:
-    type: kafka
-    bootstrap_servers: "192.168.91.37:9092"
-    group_id: "vector-group"
-    topics: ["flows"]
-    decoding:
-      codec: json
+[root@cheux37oracleos7 vector_job]# nano vector.yaml
+[root@cheux37oracleos7 vector_job]# vector -c vector.yaml
+2025-07-03T11:40:23.424881Z  INFO vector::app: Log level is enabled. level="info"
+2025-07-03T11:40:23.442939Z  INFO vector::app: Loading configs. paths=["vector.yaml"]
+2025-07-03T11:40:23.660308Z ERROR vector::topology::builder: Configuration error. error=Transform "enrich_flows":
+error[E105]: call to undefined function
+  ┌─ :1:25
+  │
+1 │ ._mapping = parse_json!(read_file!("/home/root/new_dir/goflow2/compose/kcg/vector_job/mapping.json"))
+  │                         ^^^^^^^^^
+  │                         │
+  │                         undefined function
+  │                         did you mean "ceil"?
+  │
+  = learn more about error code 105 at https://errors.vrl.dev/105
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-transforms:
-  enrich_flows:
-    type: remap
-    inputs: [kafka_in]
-    source: |
-      ._mapping = parse_json!(read_file!("/home/root/new_dir/goflow2/compose/kcg/vector_job/mapping.json"))
-      .known = {}
-      .extra = {}
+error[E203]: syntax error
+  ┌─ :5:21
+  │
+5 │ for_each(key, value in .) {
+  │                     ^^
+  │                     │
+  │                     unexpected syntax token: "Identifier"
+  │                     expected one of: "\n", "|", ",", ":", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??", ")"
+  │
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-      for_each(key, value in .) {
-        if exists(._mapping, key) {
-          meta = get!(._mapping, key)
-          .known[meta.name] = value ?? meta.default
-        } else {
-          .extra[key] = value
-        }
-      }
+error[E203]: syntax error
+  ┌─ :8:12
+  │
+8 │     .known[meta.name] = value ?? meta.default
+  │            ^
+  │            │
+  │            unexpected syntax token: "LQuery"
+  │            expected one of: "integer literal"
+  │
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-      .known.date = format_timestamp!(now(), "%Y-%m-%d")
-      .known.time_inserted_ns = to_unix_timestamp!(now(), "nanoseconds")
-      .known.extra_fields = .extra
-      . = .known
+error[E203]: syntax error
+  ┌─ :9:3
+  │
+9 │   } else {
+  │   ^
+  │   │
+  │   unexpected syntax token: "RBrace"
+  │   expected one of: "identifier", "string literal", "raw string literal", "integer literal", "float literal", "regex literal", "timestamp literal", "function call", "path literal", "if", "null", "true", "false", "abort", "return", "_", "!", "[", "{", "("
+  │
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-sinks:
-  kafka_out:
-    type: kafka
-    inputs: [enrich_flows]
-    bootstrap_servers: "192.168.91.37:9092"
-    topic: "enriched-flows"
-    encoding:
-      codec: json
+error[E203]: syntax error
+   ┌─ :10:12
+   │
+10 │     .extra[key] = value
+   │            ^^^
+   │            │
+   │            unexpected syntax token: "Identifier"
+   │            expected one of: "integer literal"
+   │
+   = see language documentation at https://vrl.dev
+   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+
+error[E203]: syntax error
+   ┌─ :11:3
+   │
+11 │   }
+   │   ^
+   │   │
+   │   unexpected syntax token: "RBrace"
+   │   expected one of: "identifier", "string literal", "raw string literal", "integer literal", "float literal", "regex literal", "timestamp literal", "function call", "path literal", "if", "null", "true", "false", "abort", "return", "_", "!", "[", "{", "("
+   │
+   = see language documentation at https://vrl.dev
+   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+
+error[E203]: syntax error
+   ┌─ :12:1
+   │
+12 │ }
+   │ ^
+   │ │
+   │ unexpected syntax token: "RBrace"
+   │ expected one of: "identifier", "string literal", "raw string literal", "integer literal", "float literal", "regex literal", "timestamp literal", "function call", "path literal", "if", "null", "true", "false", "abort", "return", "_", "!", "[", "{", "("
+   │
+   = see language documentation at https://vrl.dev
+   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
