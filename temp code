@@ -1,41 +1,195 @@
-sources:
-  kafka_in:
-    type: kafka
-    bootstrap_servers: "localhost:9092"
-    group_id: "vector-group"
-    topics: ["raw_flows"]
-    decoding:
-      codec: json
+[root@cheux37oracleos7 vector_job]# vector -c vector.yaml
+2025-07-03T12:28:44.634287Z  INFO vector::app: Log level is enabled. level="info"
+2025-07-03T12:28:44.644858Z  INFO vector::app: Loading configs. paths=["vector.yaml"]
+2025-07-03T12:28:44.865019Z ERROR vector::topology::builder: Configuration error. error=Transform "enrich_flows":
+error[E110]: invalid argument type
+  ┌─ :2:41
+  │
+2 │ .destinationTransportPort = del(get!(., "destination TransportPort")) ?? 0
+  │                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  │                                         │
+  │                                         this expression resolves to the exact type string
+  │                                         but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "destination TransportPort" = array!("destination TransportPort")
+  =     get!(., "destination TransportPort")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-transforms:
-  enrich_flows:
-    type: remap
-    inputs: ["kafka_in"]
-    source: |
-      # Remove/clean malformed field names
-      .destinationTransportPort = del(get!(., "destination TransportPort")) ?? 0
-      .latitude = del(get!(., "latitude ")) ?? 0
-      .destinationIPv4Address = del(get!(., "destination IPv 714285714287")) ?? "NA"
-      .flow_duration_ms = to_int!(del(get!(., "flow_duration_ms")) ?? 0)
-      .flow_end_time = del(get!(., "flow_end_time")) ?? "NA"
-      .octetDeltaCount = del(get!(., "octet DeltaCount")) ?? 0
-      .iso_code = del(get!(., "iso code")) ?? "NA"
-      .time_inserted_ns = del(get!(., "time_inser ted_ns")) ?? now()
-      .datalink_vlan = del(get!(., "datalink van")) ?? 0
-      .http_cert_start_ms = del(get!(., "https certificatul FlowStartMilliseconds")) ?? 0
+error[E110]: invalid argument type
+  ┌─ :3:25
+  │
+3 │ .latitude = del(get!(., "latitude ")) ?? 0
+  │                         ^^^^^^^^^^^
+  │                         │
+  │                         this expression resolves to the exact type string
+  │                         but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "latitude " = array!("latitude ")
+  =     get!(., "latitude ")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-      # Add clean timestamp fields
-      .date = format_timestamp!(now(), "%Y-%m-%d")
-      .time_inserted_ns = to_unix_timestamp(now(), "nanoseconds")
+error[E110]: invalid argument type
+  ┌─ :4:39
+  │
+4 │ .destinationIPv4Address = del(get!(., "destination IPv 714285714287")) ?? "NA"
+  │                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  │                                       │
+  │                                       this expression resolves to the exact type string
+  │                                       but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "destination IPv 714285714287" = array!("destination IPv 714285714287")
+  =     get!(., "destination IPv 714285714287")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-      # Remove null/empty fields
-      . = compact(.)
+error[E110]: invalid argument type
+  ┌─ :5:41
+  │
+5 │ .flow_duration_ms = to_int!(del(get!(., "flow_duration_ms")) ?? 0)
+  │                                         ^^^^^^^^^^^^^^^^^^
+  │                                         │
+  │                                         this expression resolves to the exact type string
+  │                                         but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "flow_duration_ms" = array!("flow_duration_ms")
+  =     get!(., "flow_duration_ms")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-sinks:
-  kafka_out:
-    type: kafka
-    bootstrap_servers: "localhost:9092"
-    topic: "enriched_flows"
-    encoding:
-      codec: json
-    inputs: ["enrich_flows"]
+error[E110]: invalid argument type
+  ┌─ :6:30
+  │
+6 │ .flow_end_time = del(get!(., "flow_end_time")) ?? "NA"
+  │                              ^^^^^^^^^^^^^^^
+  │                              │
+  │                              this expression resolves to the exact type string
+  │                              but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "flow_end_time" = array!("flow_end_time")
+  =     get!(., "flow_end_time")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+
+error[E110]: invalid argument type
+  ┌─ :7:32
+  │
+7 │ .octetDeltaCount = del(get!(., "octet DeltaCount")) ?? 0
+  │                                ^^^^^^^^^^^^^^^^^^
+  │                                │
+  │                                this expression resolves to the exact type string
+  │                                but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "octet DeltaCount" = array!("octet DeltaCount")
+  =     get!(., "octet DeltaCount")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+
+error[E110]: invalid argument type
+  ┌─ :8:25
+  │
+8 │ .iso_code = del(get!(., "iso code")) ?? "NA"
+  │                         ^^^^^^^^^^
+  │                         │
+  │                         this expression resolves to the exact type string
+  │                         but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "iso code" = array!("iso code")
+  =     get!(., "iso code")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+
+error[E110]: invalid argument type
+  ┌─ :9:33
+  │
+9 │ .time_inserted_ns = del(get!(., "time_inser ted_ns")) ?? now()
+  │                                 ^^^^^^^^^^^^^^^^^^^
+  │                                 │
+  │                                 this expression resolves to the exact type string
+  │                                 but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "time_inser ted_ns" = array!("time_inser ted_ns")
+  =     get!(., "time_inser ted_ns")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+
+error[E110]: invalid argument type
+   ┌─ :10:30
+   │
+10 │ .datalink_vlan = del(get!(., "datalink van")) ?? 0
+   │                              ^^^^^^^^^^^^^^
+   │                              │
+   │                              this expression resolves to the exact type string
+   │                              but the parameter "path" expects the exact type array
+   │
+   = try: ensuring an appropriate type at runtime
+   =
+   =     "datalink van" = array!("datalink van")
+   =     get!(., "datalink van")
+   =
+   = see documentation about error handling at https://errors.vrl.dev/#handling
+   = learn more about error code 110 at https://errors.vrl.dev/110
+   = see language documentation at https://vrl.dev
+   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+
+error[E110]: invalid argument type
+   ┌─ :11:35
+   │
+11 │ .http_cert_start_ms = del(get!(., "https certificatul FlowStartMilliseconds")) ?? 0
+   │                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   │                                   │
+   │                                   this expression resolves to the exact type string
+   │                                   but the parameter "path" expects the exact type array
+   │
+   = try: ensuring an appropriate type at runtime
+   =
+   =     "https certificatul FlowStartMilliseconds" = array!("https certificatul FlowStartMilliseconds")
+   =     get!(., "https certificatul FlowStartMilliseconds")
+   =
+   = see documentation about error handling at https://errors.vrl.dev/#handling
+   = learn more about error code 110 at https://errors.vrl.dev/110
+   = see language documentation at https://vrl.dev
+   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+
+[root@cheux37oracleos7 vector_job]#
