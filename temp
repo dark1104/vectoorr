@@ -1,142 +1,195 @@
-data_dir: /var/lib/vector
+[root@cheux37oracleos7 vector_job]# vector -c vector.yaml
+2025-07-03T12:28:44.634287Z  INFO vector::app: Log level is enabled. level="info"
+2025-07-03T12:28:44.644858Z  INFO vector::app: Loading configs. paths=["vector.yaml"]
+2025-07-03T12:28:44.865019Z ERROR vector::topology::builder: Configuration error. error=Transform "enrich_flows":
+error[E110]: invalid argument type
+  ┌─ :2:41
+  │
+2 │ .destinationTransportPort = del(get!(., "destination TransportPort")) ?? 0
+  │                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  │                                         │
+  │                                         this expression resolves to the exact type string
+  │                                         but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "destination TransportPort" = array!("destination TransportPort")
+  =     get!(., "destination TransportPort")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-sources:
-  kafka_in:
-    type: kafka
-    bootstrap_servers: "localhost:9092"
-    topics: ["raw_flows"]
-    group_id: "vector-consumer-group"
-    decoding.codec: json
+error[E110]: invalid argument type
+  ┌─ :3:25
+  │
+3 │ .latitude = del(get!(., "latitude ")) ?? 0
+  │                         ^^^^^^^^^^^
+  │                         │
+  │                         this expression resolves to the exact type string
+  │                         but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "latitude " = array!("latitude ")
+  =     get!(., "latitude ")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-transforms:
-  enrich_flows:
-    type: remap
-    inputs:
-      - kafka_in
-    source: |
-      let _map = {
-        "sourceIPv4Address": { target: "source_ip", default: "NA" },
-        "destinationIPv4Address": { target: "dest_ip", default: "NA" },
-        "protocolIdentifier": { target: "protocol_id", default: 0 },
-        "protocolName": { target: "protocol_name", default: "NA" },
-        "sourceTransportPort": { target: "src_port", default: 0 },
-        "destinationTransportPort": { target: "dst_port", default: 0 },
-        "application_name": { target: "app", default: "unknown" },
-        "city_name": { target: "city", default: "NA" },
-        "country_name": { target: "country", default: "NA" },
-        "asn_number": { target: "asn", default: 0 },
-        "asn_organization": { target: "asn_org", default: "NA" },
-        "latitude": { target: "lat", default: 0 },
-        "longitude": { target: "lon", default: 0 },
-        "flow_duration_ms": { target: "duration", default: 0 },
-        "flow_direction": { target: "direction", default: "unknown" },
-        "bytes_accumulated": { target: "bytes", default: 0 },
-        "packetDeltaCount": { target: "packets", default: 0 },
-        "profile_name": { target: "profile", default: "NA" },
-        "datalink_vlan": { target: "vlan", default: 0 }
-      }
+error[E110]: invalid argument type
+  ┌─ :4:39
+  │
+4 │ .destinationIPv4Address = del(get!(., "destination IPv 714285714287")) ?? "NA"
+  │                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  │                                       │
+  │                                       this expression resolves to the exact type string
+  │                                       but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "destination IPv 714285714287" = array!("destination IPv 714285714287")
+  =     get!(., "destination IPv 714285714287")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-      let enriched = {}
-      let extra = {}
+error[E110]: invalid argument type
+  ┌─ :5:41
+  │
+5 │ .flow_duration_ms = to_int!(del(get!(., "flow_duration_ms")) ?? 0)
+  │                                         ^^^^^^^^^^^^^^^^^^
+  │                                         │
+  │                                         this expression resolves to the exact type string
+  │                                         but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "flow_duration_ms" = array!("flow_duration_ms")
+  =     get!(., "flow_duration_ms")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-      for key in keys(.) {
-        if exists(_map, key) {
-          let entry = _map[key]
-          enriched[entry.target] = get!(., key) ?? entry.default
-        } else {
-          extra[key] = get!(., key)
-        }
-      }
+error[E110]: invalid argument type
+  ┌─ :6:30
+  │
+6 │ .flow_end_time = del(get!(., "flow_end_time")) ?? "NA"
+  │                              ^^^^^^^^^^^^^^^
+  │                              │
+  │                              this expression resolves to the exact type string
+  │                              but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "flow_end_time" = array!("flow_end_time")
+  =     get!(., "flow_end_time")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-      let ts = now()
-      enriched.flow_timestamp = ts
-      enriched.time_inserted_ns = to_unix_timestamp!(ts, "nanoseconds")
-      enriched.extra_fields = extra
+error[E110]: invalid argument type
+  ┌─ :7:32
+  │
+7 │ .octetDeltaCount = del(get!(., "octet DeltaCount")) ?? 0
+  │                                ^^^^^^^^^^^^^^^^^^
+  │                                │
+  │                                this expression resolves to the exact type string
+  │                                but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "octet DeltaCount" = array!("octet DeltaCount")
+  =     get!(., "octet DeltaCount")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-      . = enriched
+error[E110]: invalid argument type
+  ┌─ :8:25
+  │
+8 │ .iso_code = del(get!(., "iso code")) ?? "NA"
+  │                         ^^^^^^^^^^
+  │                         │
+  │                         this expression resolves to the exact type string
+  │                         but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "iso code" = array!("iso code")
+  =     get!(., "iso code")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-sinks:
-  kafka_out:
-    type: kafka
-    inputs:
-      - enrich_flows
-    bootstrap_servers: "localhost:9092"
-    topic: "enriched_flows"
-    encoding.codec: json
+error[E110]: invalid argument type
+  ┌─ :9:33
+  │
+9 │ .time_inserted_ns = del(get!(., "time_inser ted_ns")) ?? now()
+  │                                 ^^^^^^^^^^^^^^^^^^^
+  │                                 │
+  │                                 this expression resolves to the exact type string
+  │                                 but the parameter "path" expects the exact type array
+  │
+  = try: ensuring an appropriate type at runtime
+  =
+  =     "time_inser ted_ns" = array!("time_inser ted_ns")
+  =     get!(., "time_inser ted_ns")
+  =
+  = see documentation about error handling at https://errors.vrl.dev/#handling
+  = learn more about error code 110 at https://errors.vrl.dev/110
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
+error[E110]: invalid argument type
+   ┌─ :10:30
+   │
+10 │ .datalink_vlan = del(get!(., "datalink van")) ?? 0
+   │                              ^^^^^^^^^^^^^^
+   │                              │
+   │                              this expression resolves to the exact type string
+   │                              but the parameter "path" expects the exact type array
+   │
+   = try: ensuring an appropriate type at runtime
+   =
+   =     "datalink van" = array!("datalink van")
+   =     get!(., "datalink van")
+   =
+   = see documentation about error handling at https://errors.vrl.dev/#handling
+   = learn more about error code 110 at https://errors.vrl.dev/110
+   = see language documentation at https://vrl.dev
+   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
+error[E110]: invalid argument type
+   ┌─ :11:35
+   │
+11 │ .http_cert_start_ms = del(get!(., "https certificatul FlowStartMilliseconds")) ?? 0
+   │                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   │                                   │
+   │                                   this expression resolves to the exact type string
+   │                                   but the parameter "path" expects the exact type array
+   │
+   = try: ensuring an appropriate type at runtime
+   =
+   =     "https certificatul FlowStartMilliseconds" = array!("https certificatul FlowStartMilliseconds")
+   =     get!(., "https certificatul FlowStartMilliseconds")
+   =
+   = see documentation about error handling at https://errors.vrl.dev/#handling
+   = learn more about error code 110 at https://errors.vrl.dev/110
+   = see language documentation at https://vrl.dev
+   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
 
-
-
-------
-
-
-sources:
-  kafka_in:
-    type: kafka
-    bootstrap_servers: "localhost:9092"
-    topics: ["raw_flows"]
-    group_id: "vector-consumer"
-    decoding:
-      codec: json
-
-transforms:
-  enrich_flows:
-    type: remap
-    inputs: ["kafka_in"]
-    source: |
-      # Rename or fix known fields
-      . = merge(., {
-        "destinationTransportPort": del(.["destination TransportPort"]),
-        "flow_duration_ms": del(.["flow_duration_ms"]),
-        "flow_end_time": del(.["flow_end_time"]),
-        "flow_start_time": del(.["flow_start_time"]),
-        "octetDeltaCount": del(.["octet DeltaCount"]),
-        "sourceTransportPort": del(.["sourceTransportPort"]),
-        "sourceIPv4Address": del(.["sourceIPv4Address"]),
-        "destinationIPv4Address": del(.["destination IPv 714285714287"]),
-        "longitude": del(.["longitude"]),
-        "latitude": del(.["latitude "]),
-        "iso_code": del(.["iso code"]),
-        "flow_direction": del(.["flow_direction"]),
-        "datalink_vlan": del(.["datalink van"]),
-        "http_cert_start_ms": del(.["https certificatul FlowStartMilliseconds"]),
-        "time_inserted_ns": del(.["time_inser ted_ns"]),
-        "application_name": del(.["application_name"]),
-        "protocolName": del(.["protocolName"]),
-        "tcp_retransmits": del(.["tcp_retransmits"]),
-        "tcp_rst": del(.["tcp_rst"]),
-        "tcp_fin": del(.["tcp_fin"]),
-        "asn_number": del(.["asn_number"]),
-        "asn_organization": del(.["asn_organization"]),
-        "city_name": del(.["city_name"]),
-        "country_name": del(.["country_name"]),
-        "packetDeltaCount": del(.["packetDeltaCount"]),
-        "bytes_per_packet": del(.["bytes_per_packet"]),
-        "bytes_accumulated": del(.["bytes_accumulated"]),
-        "profile_name": del(.["profile_name"]),
-        "protocolIdentifier": del(.["protocolIdentifier"]),
-        "flowEndMilliseconds": del(.["flowEnd Milliseconds"]),
-        "mac_source": del(.["mac_source"]),
-        "mac_destination": del(.["mac_destination"]),
-        "http_url": del(.["http_url"]),
-        "time_received_ns": del(.["time_received_ns"])
-      })
-
-      # Trim and normalize string keys if needed
-      . = compact(.)  # remove nulls
-
-      # Optional: Add timestamp if missing
-      if !exists(.timestamp) {
-        .timestamp = now()
-      }
-
-sinks:
-  kafka_out:
-    type: kafka
-    inputs:
-      - enrich_flows
-    bootstrap_servers: "localhost:9092"
-    topic: "enriched_flows"
-    encoding:
-      codec: json
+[root@cheux37oracleos7 vector_job]#
