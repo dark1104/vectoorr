@@ -1,67 +1,64 @@
-If you're getting vector: command not found, it means Vector.dev is not yet installed on your Linux VM.
-
-Let’s fix that step by step 👇
+Looks like the Yum repo didn’t link or the package naming changed. Let’s install Vector directly using the RPM—this is reliable and straightforward.
 
 
 ---
 
-✅ Step-by-Step: Install Vector on Linux VM (Debian/Ubuntu based)
+✅ Step 1: Download the latest RPM
 
-🧭 Step 1: Add Vector Repository
+From the Vector GitHub releases:
 
-curl -1sLf 'https://repositories.timber.io/public/vector/cfg/setup/bash.deb.sh' | sudo -E bash
+cd /tmp
+sudo curl -L -O https://yum.vector.dev/stable/vector-0.48.0-1.x86_64.rpm
 
-🧱 Step 2: Install Vector
-
-sudo apt install vector
-
-> This installs the vector binary globally to /usr/bin/vector.
+You can replace 0.48.0 with the latest version listed in the releases  .
 
 
+---
 
-🧪 Step 3: Verify Installation
+✅ Step 2: Install it via RPM
+
+sudo rpm -Uvh vector-0.48.0-1.x86_64.rpm
+
+This installs the vector binary and sets up the necessary files.
+
+
+---
+
+✅ Step 3: Verify Installation
 
 vector --version
 
-Expected output (example):
+Expected output:
 
-vector 0.36.0 (x86_64-unknown-linux-gnu)
+vector 0.48.0 (x86_64-unknown-linux-gnu)
 
 
 ---
 
-✅ Step 4: Run Your Vector Job
+✅ Step 4: Run Your Pipeline
 
-Now navigate to your config folder and run:
+Ensure your working files are in place:
 
 cd /home/vncuser/vector-job
 vector -c vector.yaml
 
-✅ Vector will:
-
-Consume from Kafka topic flows
-
-Map/transform the records
-
-Output to Kafka topic enriched-flows
-
+Vector will now start consuming from flows, enrich records, and output to enriched-flows.
 
 
 ---
 
-🛠 Optional (Auto-run at boot)
+✅ Why This Works
 
-You can later use Vector as a systemd service or even create a custom service for your own job if needed.
-
-Let me know if:
-
-You're on RHEL/CentOS instead — commands differ slightly.
-
-You need help setting up Vector as a systemd service.
-
-You want to enrich using the GeoLite2 MMDB files or Flask API in the Vector flow (like you did in Flink).
+Using the RPM directly bypasses errors in YUM repo configuration and ensures you're installing an official build  .
 
 
-Need to define a mapping file b/w flow records coming from db and what is the corresponding coloumn in db . The mapping should have a name ,description , datatype , ismandatory and default value. If you recieve something that is not matching , we just need to stored that in a general coloumn in table  which should be in jsonb datatype.  This translation should happen in flink. Lets say you get 15 values from collector (goflow2) and we only have DB mapping for 10 values , the output kafka should have proper mapping for 10 values and remaning 5 values should be stored in json format in the coloumn to hold additional values.  this is a generic coloumn of jsonb type
+---
 
-need to do this without using flink and use https://vector.dev/
+Want to:
+
+Automate this via script?
+
+Wrap Vector run in a systemd service to start on boot?
+
+
+Let me know!
