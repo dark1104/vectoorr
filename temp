@@ -24,7 +24,6 @@ transforms:
         "octetDeltaCount": {"target": "bytes", "default": 0}
       }
 
-      # Create new enriched record
       enriched = {}
 
       for key in keys!(.) {
@@ -34,12 +33,11 @@ transforms:
         }
       }
 
-      # Add timestamps
-      enriched["date"] = format_timestamp!(now(), "%Y-%m-%d")
-      enriched["time_inserted_ns"] = to_unix_timestamp!(now(), "nanoseconds")
+      enriched.date = format_timestamp!(now(), "%Y-%m-%d")
+      enriched.time_inserted_ns = to_unix_timestamp!(now(), "nanoseconds")
 
-      # Replace entire event with enriched record
-      . = enriched
+      # Correct way: merge enriched into the current event
+      merge!(., enriched)
 
 sinks:
   kafka_out:
