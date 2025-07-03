@@ -1,63 +1,48 @@
-sources:
-  kafka_in:
-    type: kafka
-    bootstrap_servers: "localhost:9092"
-    topics: ["raw_flows"]
-    group_id: "vector-consumer"
-    decoding:
-      codec: json
+data_dir = "/var/lib/vector"
 
-transforms:
-  enrich_flows:
-    type: remap
-    inputs: [kafka_in]
-    source: |
-      # Fix badly named/malformed keys
-      .destinationTransportPort = to_int(get!(., "destination TransportPort"))
-      del(.["destination TransportPort"])
+[api]
+enabled = true
+address = "0.0.0.0:8686"
 
-      .latitude = to_float(get!(., "latitude "))
-      del(.["latitude "])
+[sources.kafka_in]
+type = "kafka"
+bootstrap_servers = "localhost:9092"       # change if needed
+group_id = "vector-group"
+topics = ["raw_flows"]
+auto_offset_reset = "earliest"
+decode = "json"                             # use this for JSON-encoded Kafka messages
 
-      .destinationIPv4Address = get!(., "destination IPv 714285714287") ?? "NA"
-      del(.["destination IPv 714285714287"])
+[transforms.enrich_flows]
+type = "remap"
+inputs = ["kafka_in"]
+source = '''
+# Drop incorrectly named or extra fields
+.destinationTransportPort = del(get!(., "destination TransportPort"))
+.latitude = del(get!(., "latitude "))
+.destinationIPv4Address = del(get!(., "destination IPv 714285714287"))
+.flow_duration_ms = to_int(get!(., "flow_duration_ms") ?? 0)
+.flow_end_time = del(get!(., "flow_end_time"))
+.octetDeltaCount = del(get!(., "octet DeltaCount"))
+.iso_code = del(get!(., "iso code"))
+.time_inserted_ns = del(get!(., "time_inser ted_ns"))
+.datalink_vlan = del(get!(., "datalink van"))
+.https_url_certificate = del(get!(., "https certificatul FlowStartMilliseconds"))
 
-      .flow_duration_ms = to_int(get!(., "flow_duration_ms") ?? 0)
-      del(.["flow_duration_ms"])
+# Enrich with nested api_data
+.user_name = get!(.api_data, "first_name") ?? "NA"
+.email = get!(.api_data, "email") ?? "NA"
 
-      .flow_end_time = parse_timestamp!(get!(., "flow_end_time"), "%a %b %d %H:%M:%S %Z %Y")
-      del(.["flow_end_time"])
+# Normalize timestamp
+.flow_start_time = to_timestamp(get!(., "flow_start_time") ?? "", "%a %b %d %H:%M:%S UTC %Y") ?? now()
+.flow_end_time = now()
 
-      .octetDeltaCount = to_int(get!(., "octet DeltaCount") ?? 0)
-      del(.["octet DeltaCount"])
+# Cleanup
+.api_data = del(.api_data)
+'''
 
-      .iso_code = get!(., "iso code") ?? "NA"
-      del(.["iso code"])
-
-      .time_inserted_ns = to_int(get!(., "time_inser ted_ns") ?? now())
-      del(.["time_inser ted_ns"])
-
-      .datalink_vlan = to_int(get!(., "datalink van") ?? 0)
-      del(.["datalink van"])
-
-      .https_url_certificate = get!(., "https certificatul FlowStartMilliseconds") ?? "NA"
-      del(.["https certificatul FlowStartMilliseconds"])
-
-      # Example: flatten nested `api_data`
-      if exists(.api_data) {
-        .user_name = get!(.api_data, "first_name") ?? "NA"
-        .email = get!(.api_data, "email") ?? "NA"
-        del(.api_data)
-      }
-
-      # Optional timestamp conversion
-      .flow_start_time = parse_timestamp!(get!(., "flow_start_time"), "%a %b %d %H:%M:%S %Z %Y")
-
-sinks:
-  kafka_out:
-    type: kafka
-    inputs: [enrich_flows]
-    bootstrap_servers: "localhost:9092"
-    topic: "clean_flows"
-    encoding:
-      codec: json
+[sinks.kafka_out]
+type = "kafka"
+inputs = ["enrich_flows"]
+bootstrap_servers = "localhost:9092"
+topic = "enriched_flows"
+encoding.codec = "json"
