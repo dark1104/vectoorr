@@ -1,3 +1,63 @@
 cd /tmp
 curl -L -o vector.rpm https://github.com/timberio/vector/releases/download/v0.48.0/vector-0.48.0-1.x86_64.rpm
 sudo rpm -Uvh vector.rpm
+
+
+{
+  "sourceIPv4Address": {
+    "name": "source_ip",
+    "description": "Source IPv4 Address",
+    "type": "string",
+    "isMandatory": true,
+    "default": "0.0.0.0"
+  },
+  "destinationIPv4Address": {
+    "name": "destination_ip",
+    "description": "Destination IPv4 Address",
+    "type": "string",
+    "isMandatory": true,
+    "default": "0.0.0.0"
+  },
+  "protocolidentifier": {
+    "name": "protocol_id",
+    "description": "Protocol Identifier",
+    "type": "int",
+    "isMandatory": false,
+    "default": 0
+  },
+  "protocolname": {
+    "name": "protocol_name",
+    "description": "Protocol Name",
+    "type": "string",
+    "isMandatory": false,
+    "default": "NA"
+  },
+  "sourcetransportport": {
+    "name": "source_port",
+    "description": "Source Transport Port",
+    "type": "int",
+    "isMandatory": false,
+    "default": 0
+  },
+  "destinationtransportport": {
+    "name": "destination_port",
+    "description": "Destination Transport Port",
+    "type": "int",
+    "isMandatory": false,
+    "default": 0
+  },
+  "flow_start_time": {
+    "name": "flow_start_time",
+    "description": "Start Time of Flow",
+    "type": "string",
+    "isMandatory": false,
+    "default": "1970-01-01T00:00:00.000"
+  },
+  "flow_end_time": {
+    "name": "flow_end_time",
+    "description": "End Time of Flow",
+    "type": "string",
+    "isMandatory": false,
+    "default": "1970-01-01T00:00:00.000"
+  }
+}
