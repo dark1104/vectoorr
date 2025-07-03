@@ -62,3 +62,7 @@ Wrap Vector run in a systemd service to start on boot?
 
 
 Let me know!
+
+
+
+{"flow_start_time": "Sun Mar 30 08:06:10 UTC 2025", "date": "2025-05-09", "destination TransportPort":0,"bytes_accumulated":7389, "latitude ":0,"sourceIPv4Address": "173.130.155.90", "mac_source": "3a:dl:ea:14:39:54", "mac_destination": "40:8c:d1:8e:af:21", "api_data": {"gender": "Male", "last_name":"Karle", "id":495, "ip_address": "173.130.155.90", "first_name": "Pepe", "email":"pkarledq@is.gd"},"flow_duration_ms":35 5, "flow_end_time":"Sun Mar 30 08:12:05 UTC 2025", "asn_organization": "NA", "tcp_retransmits":0,"profile_name": "web_servers", "time_inser ted_ns":1746789289969000000, "city_name": "NA", "application_name": "unknown", "protocolName":"ICMP", "country_name": "NA", "octet DeltaCount" :7389, "bytes_per_packet":1055.5714285714287, "sourceTransportPort": 0, "flowEnd Milliseconds": 1743321970355, "longitude": 0, "destination IPv 714285714287,"sourceTransport 4Address": "45.124.253.173", "tcp_rst":0,"packetDeltaCount":7, "http_url": null, "protocolIdentifier": 1, "tcp_fin":0,"flow_direction": "outb ound", "asn_number": 0, "time_received_ns":1743322325000000000,"iso code":"NA", "datalink van": 1, "https certificatul FlowStar tMilliseconds": 1743321970000}
