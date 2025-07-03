@@ -1,106 +1,41 @@
-{
-  "sourceIPv4Address": {
-    "name": "source_ip",
-    "description": "Source IPv4 Address",
-    "type": "string",
-    "isMandatory": true,
-    "default": "0.0.0.0"
-  },
-  "destinationIPv4Address": {
-    "name": "destination_ip",
-    "description": "Destination IPv4 Address",
-    "type": "string",
-    "isMandatory": true,
-    "default": "0.0.0.0"
-  },
-  "protocolidentifier": {
-    "name": "protocol_id",
-    "description": "Protocol Identifier",
-    "type": "int",
-    "isMandatory": false,
-    "default": 0
-  },
-  "protocolname": {
-    "name": "protocol_name",
-    "description": "Protocol Name",
-    "type": "string",
-    "isMandatory": false,
-    "default": "NA"
-  },
-  "sourcetransportport": {
-    "name": "source_port",
-    "description": "Source Transport Port",
-    "type": "int",
-    "isMandatory": false,
-    "default": 0
-  },
-  "destinationtransportport": {
-    "name": "destination_port",
-    "description": "Destination Transport Port",
-    "type": "int",
-    "isMandatory": false,
-    "default": 0
-  },
-  "flow_start_time": {
-    "name": "flow_start_time",
-    "description": "Start Time of Flow",
-    "type": "string",
-    "isMandatory": false,
-    "default": "1970-01-01T00:00:00.000"
-  },
-  "flow_end_time": {
-    "name": "flow_end_time",
-    "description": "End Time of Flow",
-    "type": "string",
-    "isMandatory": false,
-    "default": "1970-01-01T00:00:00.000"
-  }
-}
-
-
---------------------
-
-
 sources:
   kafka_in:
     type: kafka
-    bootstrap_servers: "192.168.91.37:9092"
-    group_id: "vector-group"
-    topics: ["flows"]
-    decoding:
+    bootstrap_servers: "localhost:9092"
+    topics: ["raw_flows"]
+    group_id: "vector-consumer"
+    encoding:
       codec: json
 
 transforms:
   enrich_flows:
     type: remap
-    inputs: [kafka_in]
+    inputs: ["kafka_in"]
     source: |
-      let mapping = parse_json!(file("/home/vncuser/vector-job/mapping.json"))
-      let known = {}
-      let extra = {}
+      # Normalize misnamed fields
+      .destinationTransportPort = del(.["destination TransportPort"])
+      .latitude = del(.["latitude "])
+      .destinationIPv4Address = del(.["destination IPv 714285714287"])
+      .flow_duration_ms = to_int!(.["flow_duration_ms"])
+      .flow_end_time = del(.["flow_end_time"])
+      .octetDeltaCount = del(.["octet DeltaCount"])
+      .iso_code = del(.["iso code"])
+      .time_inserted_ns = del(.["time_inser ted_ns"])
+      .datalink_vlan = del(.["datalink van"])
+      .http_cert_start_ms = del(.["https certificatul FlowStartMilliseconds"])
 
-      for_each(.keys()) -> |key| {
-        if contains(mapping, key) {
-          let meta = mapping[key]
-          known[meta.name] = .[key] ?? meta.default
-        } else {
-          extra[key] = .[key]
-        }
-      }
+      # Clean up other invalid or null fields
+      . = compact(.) # remove nulls
 
-      # Add system-generated fields
-      let now = now()
-      known.date = format_timestamp!(now, "%Y-%m-%d")
-      known.time_inserted_ns = to_unix_timestamp(now, "nanoseconds")
-
-      known.extra_fields = extra
-      . = known
+      # Optional: add date/time fields
+      .date = format_timestamp!(now(), "%Y-%m-%d")
+      .time_inserted_ns = to_unix_timestamp(now(), "nanoseconds")
 
 sinks:
   kafka_out:
     type: kafka
-    inputs: [enrich_flows]
-    bootstrap_servers: "192.168.91.37:9092"
-    topic: "enriched-flows"
+    inputs: ["enrich_flows"]
+    bootstrap_servers: "localhost:9092"
+    topic: "enriched_flows"
     encoding:
       codec: json
