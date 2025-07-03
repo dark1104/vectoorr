@@ -1,380 +1,65 @@
-[root@cheux37oracleos7 vector_job]# nano vector.yaml
-[root@cheux37oracleos7 vector_job]# vector -c vector.yaml
-2025-07-03T12:05:51.492657Z  INFO vector::app: Log level is enabled. level="info"
-2025-07-03T12:05:51.501884Z  INFO vector::app: Loading configs. paths=["vector.yaml"]
-2025-07-03T12:05:51.507796Z  WARN vrl::compiler::unused_expression_checker: unexpected identifier `extra` reported as used
-2025-07-03T12:05:51.511742Z  WARN vrl::compiler::unused_expression_checker: Internal log [unexpected identifier `extra` reported as used] is being suppressed to avoid flooding.
-2025-07-03T12:05:51.512131Z  INFO vector::sources::file_descriptors: Capturing stdin.
-2025-07-03T12:05:51.513522Z  WARN transform{component_kind="transform" component_id=enrich_flows component_type=remap}: vrl::compiler::unused_expression_checker: unexpected identifier `extra` reported as used
-2025-07-03T12:05:51.620841Z ERROR vector::topology::builder: Configuration error. error=Transform "enrich_flows":
-error[E203]: syntax error
-  ┌─ :1:5
-  │
-1 │ let _map = {
-  │     ^^^^
-  │     │
-  │     unexpected syntax token: "Identifier"
-  │     expected one of: ";", "\n", "|", "=", "|=", ",", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+data_dir: /var/lib/vector
 
-error[E203]: syntax error
-  ┌─ :2:22
-  │
-2 │   "sourceIPv4Address": { target: "source_ip", default: "NA" },
-  │                      ^
-  │                      │
-  │                      unexpected syntax token: "Colon"
-  │                      expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+sources:
+  kafka_in:
+    type: kafka
+    bootstrap_servers: "localhost:9092"
+    topics: ["raw_flows"]
+    group_id: "vector-consumer-group"
+    decoding.codec: json
 
-error[E203]: syntax error
-  ┌─ :3:27
-  │
-3 │   "destinationIPv4Address": { target: "dest_ip", default: "NA" },
-  │                           ^
-  │                           │
-  │                           unexpected syntax token: "Colon"
-  │                           expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+transforms:
+  enrich_flows:
+    type: remap
+    inputs:
+      - kafka_in
+    source: |
+      let _map = {
+        "sourceIPv4Address": { target: "source_ip", default: "NA" },
+        "destinationIPv4Address": { target: "dest_ip", default: "NA" },
+        "protocolIdentifier": { target: "protocol_id", default: 0 },
+        "protocolName": { target: "protocol_name", default: "NA" },
+        "sourceTransportPort": { target: "src_port", default: 0 },
+        "destinationTransportPort": { target: "dst_port", default: 0 },
+        "application_name": { target: "app", default: "unknown" },
+        "city_name": { target: "city", default: "NA" },
+        "country_name": { target: "country", default: "NA" },
+        "asn_number": { target: "asn", default: 0 },
+        "asn_organization": { target: "asn_org", default: "NA" },
+        "latitude": { target: "lat", default: 0 },
+        "longitude": { target: "lon", default: 0 },
+        "flow_duration_ms": { target: "duration", default: 0 },
+        "flow_direction": { target: "direction", default: "unknown" },
+        "bytes_accumulated": { target: "bytes", default: 0 },
+        "packetDeltaCount": { target: "packets", default: 0 },
+        "profile_name": { target: "profile", default: "NA" },
+        "datalink_vlan": { target: "vlan", default: 0 }
+      }
 
-error[E203]: syntax error
-  ┌─ :4:23
-  │
-4 │   "protocolIdentifier": { target: "protocol_id", default: 0 },
-  │                       ^
-  │                       │
-  │                       unexpected syntax token: "Colon"
-  │                       expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+      let enriched = {}
+      let extra = {}
 
-error[E203]: syntax error
-  ┌─ :5:17
-  │
-5 │   "protocolName": { target: "protocol_name", default: "NA" },
-  │                 ^
-  │                 │
-  │                 unexpected syntax token: "Colon"
-  │                 expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+      for key in keys(.) {
+        if exists(_map, key) {
+          let entry = _map[key]
+          enriched[entry.target] = get!(., key) ?? entry.default
+        } else {
+          extra[key] = get!(., key)
+        }
+      }
 
-error[E203]: syntax error
-  ┌─ :6:24
-  │
-6 │   "sourceTransportPort": { target: "src_port", default: 0 },
-  │                        ^
-  │                        │
-  │                        unexpected syntax token: "Colon"
-  │                        expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+      let ts = now()
+      enriched.flow_timestamp = ts
+      enriched.time_inserted_ns = to_unix_timestamp!(ts, "nanoseconds")
+      enriched.extra_fields = extra
 
-error[E203]: syntax error
-  ┌─ :7:29
-  │
-7 │   "destinationTransportPort": { target: "dst_port", default: 0 },
-  │                             ^
-  │                             │
-  │                             unexpected syntax token: "Colon"
-  │                             expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+      . = enriched
 
-error[E203]: syntax error
-  ┌─ :8:21
-  │
-8 │   "application_name": { target: "app", default: "unknown" },
-  │                     ^
-  │                     │
-  │                     unexpected syntax token: "Colon"
-  │                     expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-  ┌─ :9:14
-  │
-9 │   "city_name": { target: "city", default: "NA" },
-  │              ^
-  │              │
-  │              unexpected syntax token: "Colon"
-  │              expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :10:17
-   │
-10 │   "country_name": { target: "country", default: "NA" },
-   │                 ^
-   │                 │
-   │                 unexpected syntax token: "Colon"
-   │                 expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :11:15
-   │
-11 │   "asn_number": { target: "asn", default: 0 },
-   │               ^
-   │               │
-   │               unexpected syntax token: "Colon"
-   │               expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :12:21
-   │
-12 │   "asn_organization": { target: "asn_org", default: "NA" },
-   │                     ^
-   │                     │
-   │                     unexpected syntax token: "Colon"
-   │                     expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :13:13
-   │
-13 │   "latitude": { target: "lat", default: 0 },
-   │             ^
-   │             │
-   │             unexpected syntax token: "Colon"
-   │             expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :14:14
-   │
-14 │   "longitude": { target: "lon", default: 0 },
-   │              ^
-   │              │
-   │              unexpected syntax token: "Colon"
-   │              expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :15:21
-   │
-15 │   "flow_duration_ms": { target: "duration", default: 0 },
-   │                     ^
-   │                     │
-   │                     unexpected syntax token: "Colon"
-   │                     expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :16:19
-   │
-16 │   "flow_direction": { target: "direction", default: "unknown" },
-   │                   ^
-   │                   │
-   │                   unexpected syntax token: "Colon"
-   │                   expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :17:22
-   │
-17 │   "bytes_accumulated": { target: "bytes", default: 0 },
-   │                      ^
-   │                      │
-   │                      unexpected syntax token: "Colon"
-   │                      expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :18:21
-   │
-18 │   "packetDeltaCount": { target: "packets", default: 0 },
-   │                     ^
-   │                     │
-   │                     unexpected syntax token: "Colon"
-   │                     expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :19:17
-   │
-19 │   "profile_name": { target: "profile", default: "NA" },
-   │                 ^
-   │                 │
-   │                 unexpected syntax token: "Colon"
-   │                 expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :20:18
-   │
-20 │   "datalink_vlan": { target: "vlan", default: 0 }
-   │                  ^
-   │                  │
-   │                  unexpected syntax token: "Colon"
-   │                  expected one of: ";", "\n", "|", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :21:1
-   │
-21 │ }
-   │ ^
-   │ │
-   │ unexpected syntax token: "RBrace"
-   │ expected one of: "identifier", "string literal", "raw string literal", "integer literal", "float literal", "regex literal", "timestamp literal", "function call", "path literal", "if", "null", "true", "false", "abort", "return", "_", "!", "[", "{", "("
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :23:5
-   │
-23 │ let enriched = {}
-   │     ^^^^^^^^
-   │     │
-   │     unexpected syntax token: "Identifier"
-   │     expected one of: ";", "\n", "|", "=", "|=", ",", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :24:5
-   │
-24 │ let extra = {}
-   │     ^^^^^
-   │     │
-   │     unexpected syntax token: "Identifier"
-   │     expected one of: ";", "\n", "|", "=", "|=", ",", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E205]: reserved keyword
-   ┌─ :27:1
-   │
-27 │ for key in keys(.) {
-   │ ^^^
-   │ │
-   │ this identifier name is reserved for future use in the language
-   │ use a different name instead
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :29:9
-   │
-29 │     let entry = _map[key]
-   │         ^^^^^
-   │         │
-   │         unexpected syntax token: "Identifier"
-   │         expected one of: ";", "\n", "|", "=", "|=", ",", "+", "*", "-", "/", "<", "<=", ">", ">=", "==", "!=", "|", "&&", "||", "??", "}"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :30:14
-   │
-30 │     enriched[entry.target] = get!(., key) ?? entry.default
-   │              ^
-   │              │
-   │              unexpected syntax token: "LQuery"
-   │              expected one of: "integer literal"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :31:3
-   │
-31 │   } else {
-   │   ^
-   │   │
-   │   unexpected syntax token: "RBrace"
-   │   expected one of: "identifier", "string literal", "raw string literal", "integer literal", "float literal", "regex literal", "timestamp literal", "function call", "path literal", "if", "null", "true", "false", "abort", "return", "_", "!", "[", "{", "("
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :32:11
-   │
-32 │     extra[key] = get!(., key)
-   │           ^^^
-   │           │
-   │           unexpected syntax token: "Identifier"
-   │           expected one of: "integer literal"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :33:3
-   │
-33 │   }
-   │   ^
-   │   │
-   │   unexpected syntax token: "RBrace"
-   │   expected one of: "identifier", "string literal", "raw string literal", "integer literal", "float literal", "regex literal", "timestamp literal", "function call", "path literal", "if", "null", "true", "false", "abort", "return", "_", "!", "[", "{", "("
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :34:1
-   │
-34 │ }
-   │ ^
-   │ │
-   │ unexpected syntax token: "RBrace"
-   │ expected one of: "identifier", "string literal", "raw string literal", "integer literal", "float literal", "regex literal", "timestamp literal", "function call", "path literal", "if", "null", "true", "false", "abort", "return", "_", "!", "[", "{", "("
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E701]: call to undefined variable
-   ┌─ :39:25
-   │
-39 │ enriched.extra_fields = extra
-   │                         ^^^^^
-   │                         │
-   │                         undefined variable
-   │                         did you mean "true"?
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+sinks:
+  kafka_out:
+    type: kafka
+    inputs:
+      - enrich_flows
+    bootstrap_servers: "localhost:9092"
+    topic: "enriched_flows"
+    encoding.codec: json
