@@ -12,7 +12,7 @@ transforms:
     type: remap
     inputs: [kafka_in]
     source: |
-      # Load the JSON mapping file
+      # ✅ Corrected: added "=" in let statement
       let mapping = parse_json!(file("/home/vncuser/vector-job/mapping.json"))
 
       let known = {}
