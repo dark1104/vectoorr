@@ -1,3 +1,26 @@
+[root@cheux37oracleos7 vector_job]# nano vector.yaml
+[root@cheux37oracleos7 vector_job]# vector -c vector.yaml
+2025-07-03T13:12:36.869105Z  INFO vector::app: Log level is enabled. level="info"
+2025-07-03T13:12:36.878300Z  INFO vector::app: Loading configs. paths=["vector.yaml"]
+2025-07-03T13:12:36.881667Z ERROR vector::cli: Configuration error. error=deserializing from YAML containing more than one document is not supported
+[root@cheux37oracleos7 vector_job]#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 data_dir = "/var/lib/vector"
 
 [api]
