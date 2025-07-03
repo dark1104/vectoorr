@@ -1,123 +1,41 @@
-[root@cheux37oracleos7 vector_job]# vector -c vector.yaml
-2025-07-03T12:19:26.990550Z  INFO vector::app: Log level is enabled. level="info"
-2025-07-03T12:19:27.006232Z  INFO vector::app: Loading configs. paths=["vector.yaml"]
-2025-07-03T12:19:27.221564Z ERROR vector::topology::builder: Configuration error. error=Transform "enrich_flows":
-error[E203]: syntax error
-  ┌─ :2:35
-  │
-2 │ .destinationTransportPort = del(.["destination TransportPort"])
-  │                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  │                                   │
-  │                                   unexpected syntax token: "StringLiteral"
-  │                                   expected one of: "integer literal"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+sources:
+  kafka_in:
+    type: kafka
+    bootstrap_servers: "localhost:9092"
+    group_id: "vector-group"
+    topics: ["raw_flows"]
+    decoding:
+      codec: json
 
-error[E203]: syntax error
-  ┌─ :3:19
-  │
-3 │ .latitude = del(.["latitude "])
-  │                   ^^^^^^^^^^^
-  │                   │
-  │                   unexpected syntax token: "StringLiteral"
-  │                   expected one of: "integer literal"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+transforms:
+  enrich_flows:
+    type: remap
+    inputs: ["kafka_in"]
+    source: |
+      # Remove/clean malformed field names
+      .destinationTransportPort = del(get!(., "destination TransportPort")) ?? 0
+      .latitude = del(get!(., "latitude ")) ?? 0
+      .destinationIPv4Address = del(get!(., "destination IPv 714285714287")) ?? "NA"
+      .flow_duration_ms = to_int!(del(get!(., "flow_duration_ms")) ?? 0)
+      .flow_end_time = del(get!(., "flow_end_time")) ?? "NA"
+      .octetDeltaCount = del(get!(., "octet DeltaCount")) ?? 0
+      .iso_code = del(get!(., "iso code")) ?? "NA"
+      .time_inserted_ns = del(get!(., "time_inser ted_ns")) ?? now()
+      .datalink_vlan = del(get!(., "datalink van")) ?? 0
+      .http_cert_start_ms = del(get!(., "https certificatul FlowStartMilliseconds")) ?? 0
 
-error[E203]: syntax error
-  ┌─ :4:33
-  │
-4 │ .destinationIPv4Address = del(.["destination IPv 714285714287"])
-  │                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  │                                 │
-  │                                 unexpected syntax token: "StringLiteral"
-  │                                 expected one of: "integer literal"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+      # Add clean timestamp fields
+      .date = format_timestamp!(now(), "%Y-%m-%d")
+      .time_inserted_ns = to_unix_timestamp(now(), "nanoseconds")
 
-error[E203]: syntax error
-  ┌─ :5:31
-  │
-5 │ .flow_duration_ms = to_int!(.["flow_duration_ms"])
-  │                               ^^^^^^^^^^^^^^^^^^
-  │                               │
-  │                               unexpected syntax token: "StringLiteral"
-  │                               expected one of: "integer literal"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
+      # Remove null/empty fields
+      . = compact(.)
 
-error[E203]: syntax error
-  ┌─ :6:24
-  │
-6 │ .flow_end_time = del(.["flow_end_time"])
-  │                        ^^^^^^^^^^^^^^^
-  │                        │
-  │                        unexpected syntax token: "StringLiteral"
-  │                        expected one of: "integer literal"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-  ┌─ :7:26
-  │
-7 │ .octetDeltaCount = del(.["octet DeltaCount"])
-  │                          ^^^^^^^^^^^^^^^^^^
-  │                          │
-  │                          unexpected syntax token: "StringLiteral"
-  │                          expected one of: "integer literal"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-  ┌─ :8:19
-  │
-8 │ .iso_code = del(.["iso code"])
-  │                   ^^^^^^^^^^
-  │                   │
-  │                   unexpected syntax token: "StringLiteral"
-  │                   expected one of: "integer literal"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-  ┌─ :9:27
-  │
-9 │ .time_inserted_ns = del(.["time_inser ted_ns"])
-  │                           ^^^^^^^^^^^^^^^^^^^
-  │                           │
-  │                           unexpected syntax token: "StringLiteral"
-  │                           expected one of: "integer literal"
-  │
-  = see language documentation at https://vrl.dev
-  = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :10:24
-   │
-10 │ .datalink_vlan = del(.["datalink van"])
-   │                        ^^^^^^^^^^^^^^
-   │                        │
-   │                        unexpected syntax token: "StringLiteral"
-   │                        expected one of: "integer literal"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/examples
-
-error[E203]: syntax error
-   ┌─ :11:29
-   │
-11 │ .http_cert_start_ms = del(.["https certificatul FlowStartMilliseconds"])
-   │                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   │                             │
-   │                             unexpected syntax token: "StringLiteral"
-   │                             expected one of: "integer literal"
-   │
-   = see language documentation at https://vrl.dev
-   = try your code in the VRL REPL, learn more at https://vrl.dev/example
+sinks:
+  kafka_out:
+    type: kafka
+    bootstrap_servers: "localhost:9092"
+    topic: "enriched_flows"
+    encoding:
+      codec: json
+    inputs: ["enrich_flows"]
