@@ -1,0 +1,13 @@
+ Hello sir,
+
+The Vector.dev only support  basic tranformations like fied renaming and deletaion, so we have to use VRl Advance transf
+
+vector.dev only supports basic transformations like field renaming and deletion
+so we have to use VRL for advanced transformations like default values
+No dynamic schema validation from external files
+No support for external API calls
+we cannot do advanced transformations like nested validation
+ 
+
+
+vector is fast than java but we will need to hardcode every thing and if we made some changes in the file then we will make the changes in the file but in the filnk job we will need to make chages only in the mapping file
