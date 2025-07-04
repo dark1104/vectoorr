@@ -11,3 +11,14 @@ we cannot do advanced transformations like nested validation
 
 
 vector is fast than java but we will need to hardcode every thing and if we made some changes in the file then we will make the changes in the file but in the filnk job we will need to make chages only in the mapping file
+
+
+
+
+
+Hello Sir,
+
+Vector.dev only supports basic transformations such as field renaming and deletion. For any advanced transformations—like setting default values or performing conditional logic—we need to use VRL (Vector Remap Language). However, even with VRL, there are some limitations. It doesn’t support dynamic schema validation using external files, and there's no support for calling external APIs. This means we’re also restricted when it comes to more complex operations, like nested field validation or enrichment from external sources.
+
+
+Vector is faster than Java in terms of performance, but it requires everything to be hardcoded. So, if we need to make any changes, we have to manually update the actual logic in the Vector config or VRL script. On the other hand, with the Flink job, we only need to update the external mapping file—no need to modify the job code itself. This makes Flink more flexible and easier to maintain for dynamic changes.
