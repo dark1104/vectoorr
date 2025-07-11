@@ -1,152 +1,82 @@
-[root@cheux37oracleos7 vector_job]# nano vector.yaml
-[root@cheux37oracleos7 vector_job]# vector -c vector.yaml
-2025-07-03T13:12:36.869105Z  INFO vector::app: Log level is enabled. level="info"
-2025-07-03T13:12:36.878300Z  INFO vector::app: Loading configs. paths=["vector.yaml"]
-2025-07-03T13:12:36.881667Z ERROR vector::cli: Configuration error. error=deserializing from YAML containing more than one document is not supported
-[root@cheux37oracleos7 vector_job]#
+You're getting this error because cert-manager is installed, but its webhook service (cert-manager-webhook) is not running or not available:
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-data_dir = "/var/lib/vector"
-
-[api]
-enabled = true
-address = "0.0.0.0:8686"
-
-[sources.kafka_in]
-type = "kafka"
-bootstrap_servers = "localhost:9092"       # change if needed
-group_id = "vector-group"
-topics = ["raw_flows"]
-auto_offset_reset = "earliest"
-decode = "json"                             # use this for JSON-encoded Kafka messages
-
-[transforms.enrich_flows]
-type = "remap"
-inputs = ["kafka_in"]
-source = '''
-# Drop incorrectly named or extra fields
-.destinationTransportPort = del(get!(., "destination TransportPort"))
-.latitude = del(get!(., "latitude "))
-.destinationIPv4Address = del(get!(., "destination IPv 714285714287"))
-.flow_duration_ms = to_int(get!(., "flow_duration_ms") ?? 0)
-.flow_end_time = del(get!(., "flow_end_time"))
-.octetDeltaCount = del(get!(., "octet DeltaCount"))
-.iso_code = del(get!(., "iso code"))
-.time_inserted_ns = del(get!(., "time_inser ted_ns"))
-.datalink_vlan = del(get!(., "datalink van"))
-.https_url_certificate = del(get!(., "https certificatul FlowStartMilliseconds"))
-
-# Enrich with nested api_data
-.user_name = get!(.api_data, "first_name") ?? "NA"
-.email = get!(.api_data, "email") ?? "NA"
-
-# Normalize timestamp
-.flow_start_time = to_timestamp(get!(., "flow_start_time") ?? "", "%a %b %d %H:%M:%S UTC %Y") ?? now()
-.flow_end_time = now()
-
-# Cleanup
-.api_data = del(.api_data)
-'''
-
-[sinks.kafka_out]
-type = "kafka"
-inputs = ["enrich_flows"]
-bootstrap_servers = "localhost:9092"
-topic = "enriched_flows"
-encoding.codec = "json"
-
-
-
-
-
-
-You're seeing this error because Helm timed out while trying to uninstall the Rancher release:
-
-Error: uninstallation completed with 1 error(s): 
-* timed out waiting for the condition
-
-This usually happens when some Kubernetes resources (like webhooks, finalizers, or CRDs) are stuck and prevent the release from being fully deleted.
+Error: INSTALLATION FAILED:
+failed calling webhook "webhook.cert-manager.io":
+...
+no endpoints available for service "cert-manager-webhook"
 
 
 ---
 
-✅ Fix Step-by-Step
+⚠️ What's Happening
+
+Rancher relies on cert-manager to provision TLS certificates.
+If cert-manager is partially installed or unhealthy, Rancher installation will fail.
 
 
 ---
 
-🧼 Step 1: Force Remove Finalizers (Clean Up Stuck Resources)
-
-1. Check for any Rancher-related namespaces stuck in Terminating:
-
-
-
-kubectl get namespaces
-
-If you see cattle-system or others stuck in Terminating, do this:
-
-2. Remove finalizers:
-
-
-
-kubectl get namespace cattle-system -o json \
-| jq '.spec.finalizers = []' \
-| kubectl replace --raw "/api/v1/namespaces/cattle-system/finalize" -f -
-
-If jq is not installed, let me know — I’ll show you another way.
+✅ Step-by-Step Fix
 
 
 ---
 
-🧹 Step 2: Manually Delete the Helm Release
+🔍 Step 1: Check cert-manager pods
 
-Even though Helm failed, the release metadata may still exist. Use this:
+kubectl get pods -n cert-manager
 
-helm uninstall rancher -n cattle-system --no-hooks
+Look for these pods:
 
-This skips running any uninstall hooks that might be causing the hang.
+cert-manager
+
+cert-manager-webhook
+
+cert-manager-cainjector
 
 
----
-
-🧾 Step 3: Double-Check Deletion
-
-Clean up any leftover resources manually:
-
-kubectl delete ns cattle-system --grace-period=0 --force
-
-⚠️ --force is aggressive, use only if you're sure you're wiping Rancher completely.
+They should all be in Running status.
 
 
 ---
 
-🔁 Step 4: Retry Installation
+🔁 Step 2: If pods are missing or crashlooping, reinstall cert-manager
 
-Once everything is cleaned:
+1. First, uninstall the broken one (if needed):
+
+
+
+helm uninstall cert-manager -n cert-manager
+kubectl delete namespace cert-manager
+
+2. Reinstall cert-manager properly:
+
+
+
+kubectl create namespace cert-manager
+
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+
+helm install cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --create-namespace \
+  --set installCRDs=true
+
+Wait 1–2 minutes for the pods to come up.
+
+
+---
+
+✅ Step 3: Retry Rancher installation
+
+Once cert-manager pods are all Running, install Rancher again:
 
 helm install rancher rancher-latest/rancher \
   --namespace cattle-system \
-  --create-namespace \
   --set hostname=rancher.local \
   --set replicas=1
 
 
 ---
 
-Let me know if you get stuck on any step, especially if jq isn’t installed or namespace isn’t terminating.
-
+Let me know the output of kubectl get pods -n cert-manager, and I’ll guide you further if needed.
