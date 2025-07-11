@@ -1,82 +1,92 @@
-You're getting this error because cert-manager is installed, but its webhook service (cert-manager-webhook) is not running or not available:
-
-Error: INSTALLATION FAILED:
-failed calling webhook "webhook.cert-manager.io":
-...
-no endpoints available for service "cert-manager-webhook"
-
-
----
-
-⚠️ What's Happening
-
-Rancher relies on cert-manager to provision TLS certificates.
-If cert-manager is partially installed or unhealthy, Rancher installation will fail.
-
-
----
-
-✅ Step-by-Step Fix
-
-
----
-
-🔍 Step 1: Check cert-manager pods
-
-kubectl get pods -n cert-manager
-
-Look for these pods:
-
-cert-manager
-
-cert-manager-webhook
-
-cert-manager-cainjector
-
-
-They should all be in Running status.
-
-
----
-
-🔁 Step 2: If pods are missing or crashlooping, reinstall cert-manager
-
-1. First, uninstall the broken one (if needed):
-
-
-
-helm uninstall cert-manager -n cert-manager
-kubectl delete namespace cert-manager
-
-2. Reinstall cert-manager properly:
-
-
-
-kubectl create namespace cert-manager
-
-helm repo add jetstack https://charts.jetstack.io
-helm repo update
-
-helm install cert-manager jetstack/cert-manager \
-  --namespace cert-manager \
-  --create-namespace \
-  --set installCRDs=true
-
-Wait 1–2 minutes for the pods to come up.
-
-
----
-
-✅ Step 3: Retry Rancher installation
-
-Once cert-manager pods are all Running, install Rancher again:
-
-helm install rancher rancher-latest/rancher \
-  --namespace cattle-system \
-  --set hostname=rancher.local \
-  --set replicas=1
-
-
----
-
-Let me know the output of kubectl get pods -n cert-manager, and I’ll guide you further if needed.
+[root@cheux37oracleos7 root]# kubectl describe node
+Name:               cheux37oracleos7.che.aricent.com
+Roles:              control-plane,master
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/instance-type=k3s
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=cheux37oracleos7.che.aricent.com
+                    kubernetes.io/os=linux
+                    node-role.kubernetes.io/control-plane=true
+                    node-role.kubernetes.io/master=true
+                    node.kubernetes.io/instance-type=k3s
+Annotations:        alpha.kubernetes.io/provided-node-ip: 192.168.91.37
+                    flannel.alpha.coreos.com/backend-data: {"VNI":1,"VtepMAC":"b2:74:52:28:78:7a"}
+                    flannel.alpha.coreos.com/backend-type: vxlan
+                    flannel.alpha.coreos.com/kube-subnet-manager: true
+                    flannel.alpha.coreos.com/public-ip: 192.168.91.37
+                    k3s.io/hostname: cheux37oracleos7.che.aricent.com
+                    k3s.io/internal-ip: 192.168.91.37
+                    k3s.io/node-args: ["server"]
+                    k3s.io/node-config-hash: MLFMUCBMRVINLJJKSG32TOUFWB4CN55GMSNY25AZPESQXZCYRN2A====
+                    k3s.io/node-env: {}
+                    node.alpha.kubernetes.io/ttl: 0
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Thu, 10 Jul 2025 12:09:04 +0000
+Taints:             node.kubernetes.io/disk-pressure:NoSchedule
+Unschedulable:      false
+Lease:
+  HolderIdentity:  cheux37oracleos7.che.aricent.com
+  AcquireTime:     <unset>
+  RenewTime:       Fri, 11 Jul 2025 07:03:10 +0000
+Conditions:
+  Type             Status  LastHeartbeatTime                 LastTransitionTime                Reason                       Message
+  ----             ------  -----------------                 ------------------                ------                       -------
+  MemoryPressure   False   Fri, 11 Jul 2025 07:00:54 +0000   Thu, 10 Jul 2025 12:09:04 +0000   KubeletHasSufficientMemory   kubelet has sufficient memory available
+  DiskPressure     True    Fri, 11 Jul 2025 07:00:54 +0000   Thu, 10 Jul 2025 12:35:41 +0000   KubeletHasDiskPressure       kubelet has disk pressure
+  PIDPressure      False   Fri, 11 Jul 2025 07:00:54 +0000   Thu, 10 Jul 2025 12:09:04 +0000   KubeletHasSufficientPID      kubelet has sufficient PID available
+  Ready            True    Fri, 11 Jul 2025 07:00:54 +0000   Thu, 10 Jul 2025 12:09:05 +0000   KubeletReady                 kubelet is posting ready status
+Addresses:
+  InternalIP:  192.168.91.37
+  Hostname:    cheux37oracleos7.che.aricent.com
+Capacity:
+  cpu:                8
+  ephemeral-storage:  234762244Ki
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             32571792Ki
+  pods:               110
+Allocatable:
+  cpu:                8
+  ephemeral-storage:  228376710785
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             32571792Ki
+  pods:               110
+System Info:
+  Machine ID:                 1351c0d0945e44319c98b8498ae37098
+  System UUID:                421cc106-d008-55f9-d732-ee5ace550966
+  Boot ID:                    3db15ceb-a3e0-4d8a-8e50-d23a1485cc04
+  Kernel Version:             5.15.0-306.177.4.1.el8uek.x86_64
+  OS Image:                   Oracle Linux Server 8.10
+  Operating System:           linux
+  Architecture:               amd64
+  Container Runtime Version:  containerd://2.0.5-k3s1.32
+  Kubelet Version:            v1.32.6+k3s1
+  Kube-Proxy Version:         v1.32.6+k3s1
+PodCIDR:                      10.42.0.0/24
+PodCIDRs:                     10.42.0.0/24
+ProviderID:                   k3s://cheux37oracleos7.che.aricent.com
+Non-terminated Pods:          (5 in total)
+  Namespace                   Name                                       CPU Requests  CPU Limits  Memory Requests  Memory Limits  AGE
+  ---------                   ----                                       ------------  ----------  ---------------  -------------  ---
+  kube-system                 coredns-5688667fd4-nxz5p                   100m (1%)     0 (0%)      70Mi (0%)        170Mi (0%)     18h
+  kube-system                 local-path-provisioner-774c6665dc-qwcnn    0 (0%)        0 (0%)      0 (0%)           0 (0%)         18h
+  kube-system                 metrics-server-6f4c6675d5-zx5m8            100m (1%)     0 (0%)      70Mi (0%)        0 (0%)         18h
+  kube-system                 svclb-traefik-f2c5cd2e-bh7hx               0 (0%)        0 (0%)      0 (0%)           0 (0%)         18h
+  kube-system                 traefik-57c84cf78d-59f9j                   0 (0%)        0 (0%)      0 (0%)           0 (0%)         18h
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests    Limits
+  --------           --------    ------
+  cpu                200m (2%)   0 (0%)
+  memory             140Mi (0%)  170Mi (0%)
+  ephemeral-storage  0 (0%)      0 (0%)
+  hugepages-1Gi      0 (0%)      0 (0%)
+  hugepages-2Mi      0 (0%)      0 (0%)
+Events:
+  Type     Reason                Age                   From     Message
+  ----     ------                ----                  ----     -------
+  Warning  EvictionThresholdMet  51m (x6290 over 18h)  kubelet  Attempting to reclaim ephemeral-storage
+  Warning  FreeDiskSpaceFailed   112s (x216 over 17h)  kubelet  (combined from similar events): Failed to garbage collect required amount of images. Attempted to free 33111442227 bytes, but only found 0 bytes eligible to free.
+[root@cheux37oracleos7 root]#
